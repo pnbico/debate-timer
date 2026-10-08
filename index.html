@@ -72,6 +72,36 @@
     white-space: nowrap;
   }
   .settings-btn:hover { background: rgba(251,191,36,0.3); }
+  .settings-btn { font-size: max(1.8vh, 12px); }
+  .fs-btn { display: inline-flex; align-items: center; gap: 0.5em;
+    background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.25); color: #e5e7eb; }
+  .fs-btn:hover { background: rgba(255,255,255,0.16); }
+  .fs-btn svg { width: 1.1em; height: 1.1em; }
+
+  /* 3대3 / 4대4 빠른 전환 */
+  .format-toggle {
+    display: inline-flex;
+    padding: 0.4vh;
+    gap: 0.4vh;
+    border-radius: 1vh;
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(255,255,255,0.15);
+    flex-shrink: 0;
+  }
+  .format-btn {
+    border: none;
+    background: transparent;
+    color: rgba(255,255,255,0.7);
+    font-family: inherit;
+    font-weight: 800;
+    font-size: max(1.9vh, 12px);
+    padding: 0.6vh 1.2vw;
+    border-radius: 0.7vh;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .format-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .format-btn.active { background: #fbbf24; color: #0a0e1a; }
   
   /* 메인 영역 */
   .main {
@@ -136,44 +166,6 @@
   .pro .team-position { color: #60a5fa; }
   .con .team-position { color: #f87171; }
   
-  .prep-section {
-    margin-top: auto;
-    padding-top: 2vh;
-    border-top: 1px solid rgba(255,255,255,0.15);
-  }
-  .prep-label {
-    font-size: 1.6vh;
-    opacity: 0.6;
-    margin-bottom: 0.8vh;
-  }
-  .prep-time {
-    font-size: 3.5vh;
-    font-weight: 700;
-    margin-bottom: 1vh;
-    font-variant-numeric: tabular-nums;
-  }
-  .prep-btn {
-    width: 100%;
-    padding: 1.2vh;
-    border: none;
-    border-radius: 0.8vh;
-    font-size: 1.8vh;
-    font-weight: 700;
-    cursor: pointer;
-    font-family: inherit;
-    transition: all 0.2s;
-  }
-  .pro .prep-btn { background: #2563eb; color: #fff; }
-  .con .prep-btn { background: #dc2626; color: #fff; }
-  .prep-btn:hover { filter: brightness(1.2); }
-  .prep-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .prep-btn.active { background: #f59e0b !important; animation: pulse 1s infinite; }
-  
-  @keyframes pulse {
-    0%,100% { transform: scale(1); }
-    50% { transform: scale(1.03); }
-  }
-  
   /* 중앙 타이머 */
   .center {
     display: flex;
@@ -225,6 +217,37 @@
   .speaker-tag.pro { background: #2563eb; }
   .speaker-tag.con { background: #dc2626; }
   .speaker-tag.both { background: #6b7280; }
+
+  /* 사회자 멘트: 시간이 끝나면 다음 단계 안내. 공간은 항상 확보해 두어 화면이 흔들리지 않게 */
+  .mc-line {
+    margin-top: 1.6vh;
+    width: 88%;
+    min-height: max(7vh, 44px);
+    padding: 0.9vh 1.4vw;
+    border-radius: 1vh;
+    font-size: max(1.9vh, 12px);
+    line-height: 1.45;
+    text-align: center;
+    word-break: keep-all;
+    color: #fde68a;
+    background: rgba(251,191,36,0.08);
+    border: 1px solid rgba(251,191,36,0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    visibility: hidden;
+  }
+  .mc-line.show { visibility: visible; }
+  .mc-line .mc-tag {
+    flex-shrink: 0;
+    margin-right: 0.8em;
+    padding: 0.15em 0.6em;
+    border-radius: 0.5em;
+    background: #fbbf24;
+    color: #0a0e1a;
+    font-weight: 800;
+    font-size: 0.85em;
+  }
   
   /* 하단 진행바 + 컨트롤 */
   .bottom {
@@ -247,7 +270,7 @@
     min-width: 6.5vw;
     padding: 1.1vh 0.6vw;
     border-radius: 0.6vh;
-    font-size: 1.7vh;
+    font-size: max(1.7vh, 12px);
     font-weight: 700;
     text-align: center;
     background: rgba(255,255,255,0.08);
@@ -271,8 +294,8 @@
     box-shadow: 0 0 2.2vh rgba(251,191,36,0.6);
     transform: translateY(-0.3vh);
   }
-  .step .step-num { font-size: 1.3vh; opacity: 0.85; display: block; font-weight: 800; }
-  .step .step-dur { font-size: 1.25vh; opacity: 0.9; font-weight: 600; }
+  .step .step-num { font-size: max(1.3vh, 10px); opacity: 0.85; display: block; font-weight: 800; }
+  .step .step-dur { font-size: max(1.25vh, 10px); opacity: 0.9; font-weight: 600; }
   
   .controls {
     display: flex;
@@ -305,7 +328,7 @@
     position: absolute;
     bottom: 0.5vh;
     right: 1vw;
-    font-size: 1.2vh;
+    font-size: max(1.2vh, 10px);
     opacity: 0.4;
   }
   
@@ -373,7 +396,7 @@
     gap: 1vw;
   }
   
-  .preset-section h3, .stages-section h3, .prep-config h3 {
+  .preset-section h3, .stages-section h3 {
     font-size: 1.9vh;
     margin-bottom: 1.2vh;
     color: #fbbf24;
@@ -441,25 +464,6 @@
   .preset-desc {
     font-size: 1.4vh;
     opacity: 0.6;
-  }
-  
-  .prep-config {
-    background: rgba(255,255,255,0.03);
-    padding: 1.5vh 1.5vw;
-    border-radius: 0.8vh;
-    margin-bottom: 1vh;
-  }
-  .prep-row {
-    display: grid;
-    grid-template-columns: 1fr auto auto;
-    gap: 1vw;
-    align-items: center;
-    margin-bottom: 1vh;
-  }
-  .prep-row:last-child { margin-bottom: 0; }
-  .prep-row label {
-    font-size: 1.7vh;
-    font-weight: 600;
   }
   
   .stage-list {
@@ -589,6 +593,11 @@
   <div class="topic-bar">
     <span class="topic-label">논제</span>
     <input class="topic-text" id="topicInput" value="논제를 입력하세요 (클릭하여 수정)">
+    <div class="format-toggle" role="group" aria-label="토론 형식 바로 바꾸기">
+      <button class="format-btn" data-preset="perf33" onclick="switchFormat('perf33')" title="수행평가 3대3 토론으로 바꾸기">3대3</button>
+      <button class="format-btn" data-preset="perf44" onclick="switchFormat('perf44')" title="수행평가 4대4 토론으로 바꾸기">4대4</button>
+    </div>
+    <button class="settings-btn fs-btn" id="fsBtn" onclick="toggleFullscreen()" title="전체화면 (F)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span id="fsLabel">전체화면</span></button>
     <button class="settings-btn" onclick="downloadHTML()" title="HTML 파일로 저장" style="background:rgba(34,197,94,0.2);border-color:rgba(34,197,94,0.4);color:#86efac">⬇ 다운로드</button>
     <button class="settings-btn" onclick="openSettings()">⚙ 설정</button>
   </div>
@@ -600,11 +609,6 @@
       <div class="team-label">PRO · 찬성</div>
       <input class="team-name" id="proName" value="찬성팀">
       <div class="team-position">찬성</div>
-      <div class="prep-section">
-        <div class="prep-label" id="proPrepLabel">작전시간 (총 05:00)</div>
-        <div class="prep-time" id="proPrep">05:00</div>
-        <button class="prep-btn" id="proPrepBtn" onclick="togglePrep('pro')">작전시간 시작</button>
-      </div>
     </div>
     
     <!-- 중앙 타이머 -->
@@ -613,7 +617,8 @@
       <div class="stage-counter" id="stageCounter">시작 버튼을 눌러주세요</div>
       <div class="timer" id="timer">00:00</div>
       <div class="speaker-tag both" id="speakerTag">준비</div>
-      <div class="hint">Space: 시작/정지 · ←→: 이전/다음</div>
+      <div class="mc-line" id="mcLine" aria-live="polite"></div>
+      <div class="hint">Space: 시작/정지 · ←→: 이전/다음 · F: 전체화면</div>
     </div>
     
     <!-- 반대팀 -->
@@ -621,11 +626,6 @@
       <div class="team-label">CON · 반대</div>
       <input class="team-name" id="conName" value="반대팀">
       <div class="team-position">반대</div>
-      <div class="prep-section">
-        <div class="prep-label" id="conPrepLabel">작전시간 (총 05:00)</div>
-        <div class="prep-time" id="conPrep">05:00</div>
-        <button class="prep-btn" id="conPrepBtn" onclick="togglePrep('con')">작전시간 시작</button>
-      </div>
     </div>
   </div>
   
@@ -650,23 +650,11 @@
     </div>
     <div class="modal-body">
       <div class="preset-toast" id="presetToast"></div>
-      <!-- 좌측: 프리셋 + 작전시간 -->
+      <!-- 좌측: 프리셋 -->
       <div>
         <div class="preset-section">
           <h3>📋 프리셋 불러오기</h3>
           <div class="preset-grid" id="presetGrid"></div>
-        </div>
-        
-        <div class="prep-config">
-          <h3>⏸ 작전시간 (Prep Time)</h3>
-          <div class="prep-row">
-            <label>찬성팀 (분)</label>
-            <input type="number" id="proPrepInput" min="0" max="30" step="0.5" value="5" style="width:6vw;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.15);color:#fff;padding:0.8vh;border-radius:0.5vh;font-family:inherit;font-size:1.7vh;text-align:center;outline:none;">
-          </div>
-          <div class="prep-row">
-            <label>반대팀 (분)</label>
-            <input type="number" id="conPrepInput" min="0" max="30" step="0.5" value="5" style="width:6vw;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.15);color:#fff;padding:0.8vh;border-radius:0.5vh;font-family:inherit;font-size:1.7vh;text-align:center;outline:none;">
-          </div>
         </div>
       </div>
       
@@ -701,7 +689,6 @@
     ceda: {
       name: 'CEDA 표준 (한국 학교)',
       desc: '입론·교차조사 각 2회 + 최종변론',
-      prepPro: 5, prepCon: 5,
       stages: [
         { name: '찬성 제1입론', sec: 180, side: 'pro', short: '찬성 1입론' },
         { name: '반대 교차조사', sec: 120, side: 'con', short: '반대 교차' },
@@ -718,7 +705,6 @@
     cedaShort: {
       name: 'CEDA 축약형 (수업용)',
       desc: '입론 1회 + 교차조사 + 최종변론',
-      prepPro: 3, prepCon: 3,
       stages: [
         { name: '찬성 입론', sec: 180, side: 'pro', short: '찬성 입론' },
         { name: '반대 교차조사', sec: 90, side: 'con', short: '반대 교차' },
@@ -731,7 +717,6 @@
     parli: {
       name: '의회식 토론',
       desc: '정부·야당 입론 + 최종연설',
-      prepPro: 0, prepCon: 0,
       stages: [
         { name: '정부 제1입론', sec: 420, side: 'pro', short: '정부 1입론' },
         { name: '야당 제1입론', sec: 480, side: 'con', short: '야당 1입론' },
@@ -744,7 +729,6 @@
     karpov: {
       name: '칼 포퍼식 토론',
       desc: '3인 1팀 입론·교차조사·반박',
-      prepPro: 8, prepCon: 8,
       stages: [
         { name: '찬성 1번 입론', sec: 360, side: 'pro', short: '찬성 1입론' },
         { name: '반대 3번 교차조사', sec: 180, side: 'con', short: '반대 교차' },
@@ -761,7 +745,6 @@
     classroom: {
       name: '교실용 간이 토론',
       desc: '짧고 빠르게, 발표·질의 위주',
-      prepPro: 2, prepCon: 2,
       stages: [
         { name: '찬성 입론', sec: 120, side: 'pro', short: '찬성 입론' },
         { name: '반대 입론', sec: 120, side: 'con', short: '반대 입론' },
@@ -773,7 +756,6 @@
     jeonbuk: {
       name: '전북형 토론모형 축약형',
       desc: '평촌고 학교주도활동',
-      prepPro: 2, prepCon: 2,
       stages: [
         { name: '찬성 1번 입론', sec: 120, side: 'pro', short: '찬성① 입론' },
         { name: '반대 1번 입론', sec: 120, side: 'con', short: '반대① 입론' },
@@ -791,9 +773,8 @@
       ]
     },
     perf33: {
-      name: '수행평가 3대3 (쟁점 3개)',
-      desc: '반대신문식 · 총 26분 20초',
-      prepPro: 0, prepCon: 0,
+      name: '수행평가 3대3 토론',
+      desc: '반대신문식 · 쟁점 3개 · 총 26분 20초',
       stages: [
         { no: '1-1', name: '찬성 1토론자 입론 (쟁점1)', sec: 50, side: 'pro', short: '찬성① 입론' },
         { no: '1-2', name: '찬성 2토론자 입론 (쟁점2)', sec: 50, side: 'pro', short: '찬성② 입론' },
@@ -819,9 +800,8 @@
       ]
     },
     perf44: {
-      name: '수행평가 4대4 (쟁점 4개)',
-      desc: '반대신문식 · 총 32분 20초',
-      prepPro: 0, prepCon: 0,
+      name: '수행평가 4대4 토론',
+      desc: '반대신문식 · 쟁점 4개 · 총 32분 20초',
       stages: [
         { no: '1-1', name: '찬성 1토론자 입론 (쟁점1)', sec: 50, side: 'pro', short: '찬성① 입론' },
         { no: '1-2', name: '찬성 2토론자 입론 (쟁점2)', sec: 50, side: 'pro', short: '찬성② 입론' },
@@ -855,23 +835,19 @@
     custom: {
       name: '빈 양식부터 시작',
       desc: '단계를 직접 처음부터 추가',
-      prepPro: 0, prepCon: 0,
       stages: []
     },
   };
   
   // ========== 상태 ==========
-  let stages = JSON.parse(JSON.stringify(presets.jeonbuk.stages));
-  let prepConfig = { pro: presets.jeonbuk.prepPro * 60, con: presets.jeonbuk.prepCon * 60 }; // 초 단위
+  const DEFAULT_PRESET = 'perf33';   // 첫 화면 기본 타임테이블: 수행평가 3대3 토론
+  let stages = JSON.parse(JSON.stringify(presets[DEFAULT_PRESET].stages));
   let editingStages = []; // 모달 내 편집용
   
   let currentStage = -1;
   let timeLeft = 0;
   let isRunning = false;
   let interval = null;
-  let prepTime = { pro: presets.jeonbuk.prepPro * 60, con: presets.jeonbuk.prepCon * 60 };
-  let prepRunning = null;
-  let prepInterval = null;
   
   // ========== 유틸 ==========
   function fmt(s) {
@@ -993,23 +969,18 @@
       else if (timeLeft <= 30) timer.classList.add('warning');
     }
     
-    document.getElementById('proPrep').textContent = fmt(prepTime.pro);
-    document.getElementById('conPrep').textContent = fmt(prepTime.con);
-    document.getElementById('proPrepLabel').textContent = `작전시간 (총 ${fmt(prepConfig.pro)})`;
-    document.getElementById('conPrepLabel').textContent = `작전시간 (총 ${fmt(prepConfig.con)})`;
-    
     const playBtn = document.getElementById('playBtn');
     if (isRunning) {
       playBtn.textContent = '⏸ 일시정지';
       playBtn.classList.add('paused');
     } else {
-      playBtn.textContent = currentStage < 0 ? '▶ 시작' : '▶ 계속';
+      const stageOver = currentStage >= 0 && timeLeft <= 0;
+      const isLast = currentStage === stages.length - 1;
+      playBtn.textContent = currentStage < 0 ? '▶ 시작'
+        : stageOver ? (isLast ? '✓ 완료' : '▶ 다음 단계')
+        : '▶ 계속';
       playBtn.classList.remove('paused');
     }
-    
-    // 작전시간 비활성화 처리
-    document.getElementById('proPrepBtn').disabled = (prepConfig.pro === 0);
-    document.getElementById('conPrepBtn').disabled = (prepConfig.con === 0);
     
     updateProgress();
   }
@@ -1017,6 +988,7 @@
   // ========== 단계 제어 ==========
   function startStage(idx) {
     stopTimer();
+    hideMc();
     currentStage = idx;
     timeLeft = stages[idx].sec;
     updateDisplay();
@@ -1032,13 +1004,18 @@
       startTimer();
     } else if (isRunning) {
       stopTimer();
+    } else if (timeLeft <= 0) {
+      // 시간이 끝난 단계: 다음 단계로 넘어가 바로 시작 (사회자 멘트 후 한 번에 진행)
+      if (currentStage < stages.length - 1) {
+        startStage(currentStage + 1);
+        startTimer();
+      }
     } else {
       startTimer();
     }
   }
   
   function startTimer() {
-    if (prepRunning) stopPrep();
     isRunning = true;
     interval = setInterval(() => {
       timeLeft--;
@@ -1048,6 +1025,7 @@
         stopTimer();
         playBeep(880, 0.5);
         playBeep(880, 0.5, 0.6);
+        showMc();
       }
       updateDisplay();
     }, 1000);
@@ -1076,6 +1054,7 @@
       startStage(currentStage - 1);
     } else if (currentStage === 0) {
       stopTimer();
+      hideMc();
       currentStage = -1;
       timeLeft = 0;
       updateDisplay();
@@ -1089,56 +1068,114 @@
   }
   
   function resetAll() {
-    if (!confirm('모든 진행 상황과 작전시간을 초기화하시겠습니까?')) return;
+    if (!confirm('모든 진행 상황을 초기화하시겠습니까?')) return;
     stopTimer();
-    stopPrep();
     currentStage = -1;
     timeLeft = 0;
-    prepTime = { pro: prepConfig.pro, con: prepConfig.con };
+    hideMc();
     updateDisplay();
   }
   
-  // ========== 작전시간 ==========
-  function togglePrep(side) {
-    if (prepConfig[side] === 0) return;
-    if (prepRunning === side) {
-      stopPrep();
+  // ========== 사회자 멘트 ==========
+  // 시간 표기는 '-분-초' (예: 50초, 1분 40초, 3분)
+  function fmtKor(sec) {
+    const m = Math.floor(sec / 60), s = sec % 60;
+    if (m && s) return `${m}분 ${s}초`;
+    return m ? `${m}분` : `${s}초`;
+  }
+
+  // idx번째 단계를 안내하는 사회자 멘트 (idx가 범위를 넘으면 마무리 멘트)
+  function mcScript(idx) {
+    if (idx >= stages.length) return '시간이 다 되었습니다. 이상으로 모든 토론 순서를 마치겠습니다. 수고 많으셨습니다.';
+    const s = stages[idx];
+    const t = fmtKor(s.sec);
+    const name = String(s.name || '').trim();
+    const plain = name.replace(/\s*\([^)]*\)\s*$/, '');
+    const m = name.match(/^(찬성|반대|정부|야당)\s*(\d+)\s*(?:번|토론자)\s*(.+?)\s*(?:\(([^)]*)\))?$/);
+    let next;
+    if (m) {
+      const [, side, num, act, issue] = m;
+      const about = issue ? `${issue}에 대해 ` : '';
+      const verb = act.includes('교차') ? '질문해' : '발언해';
+      next = `다음은 ${side} 측 ${num}토론자의 ${act}입니다. ${about}${t} 동안 ${verb} 주십시오.`;
+    } else if (plain.startsWith('숙의')) {
+      next = `다음은 숙의 시간입니다. 양 팀은 ${t} 동안 협의해 주십시오.`;
+    } else if (plain.startsWith('상호토론') || plain.startsWith('자유')) {
+      next = `다음은 ${plain}입니다. 양측은 ${t} 동안 자유롭게 발언해 주십시오.`;
+    } else if (s.side === 'pro' || s.side === 'con') {
+      next = `다음은 ${plain}입니다. ${t} 동안 발언해 주십시오.`;
     } else {
-      if (prepTime[side] <= 0) {
-        alert('남은 작전시간이 없습니다.');
-        return;
-      }
-      if (isRunning) stopTimer();
-      stopPrep();
-      prepRunning = side;
-      prepInterval = setInterval(() => {
-        prepTime[side]--;
-        if (prepTime[side] <= 0) {
-          prepTime[side] = 0;
-          stopPrep();
-          playBeep(880, 0.4);
-        }
-        updateDisplay();
-      }, 1000);
-      updatePrepBtns();
+      next = `다음은 ${plain} 순서입니다. ${t} 동안 진행하겠습니다.`;
     }
+    return '시간이 다 되었습니다. ' + next;
   }
-  
-  function stopPrep() {
-    if (prepInterval) { clearInterval(prepInterval); prepInterval = null; }
-    prepRunning = null;
-    updatePrepBtns();
+
+  function showMc() {
+    const el = document.getElementById('mcLine');
+    el.textContent = '';
+    const tag = document.createElement('span');
+    tag.className = 'mc-tag';
+    tag.textContent = '사회자';
+    el.appendChild(tag);
+    el.appendChild(document.createTextNode(mcScript(currentStage + 1)));
+    el.classList.add('show');
   }
-  
-  function updatePrepBtns() {
-    const proBtn = document.getElementById('proPrepBtn');
-    const conBtn = document.getElementById('conPrepBtn');
-    proBtn.classList.toggle('active', prepRunning === 'pro');
-    conBtn.classList.toggle('active', prepRunning === 'con');
-    proBtn.textContent = prepRunning === 'pro' ? '작전시간 종료' : '작전시간 시작';
-    conBtn.textContent = prepRunning === 'con' ? '작전시간 종료' : '작전시간 시작';
+
+  function hideMc() {
+    const el = document.getElementById('mcLine');
+    el.classList.remove('show');
+    el.textContent = '';
   }
-  
+
+  // ========== 3대3 / 4대4 빠른 전환 ==========
+  function applyPreset(key) {
+    stopTimer();
+    hideMc();
+    stages = JSON.parse(JSON.stringify(presets[key].stages));
+    activePresetKey = key;
+    currentStage = -1;
+    timeLeft = 0;
+    buildProgress();
+    updateDisplay();
+    updateFormatToggle();
+  }
+
+  function switchFormat(key) {
+    if (key === activePresetKey) return;
+    const label = key === 'perf44' ? '4대4' : '3대3';
+    if (currentStage >= 0 && !confirm(`진행 중인 토론을 처음으로 되돌리고 ${label} 토론으로 바꿀까요?`)) return;
+    applyPreset(key);
+  }
+
+  function updateFormatToggle() {
+    document.querySelectorAll('.format-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.preset === activePresetKey);
+    });
+  }
+
+  // ========== 전체화면 ==========
+  function isFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement);
+  }
+  function toggleFullscreen() {
+    const d = document, el = d.documentElement;
+    try {
+      const r = isFullscreen()
+        ? (d.exitFullscreen || d.webkitExitFullscreen).call(d)
+        : (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+      if (r && r.catch) r.catch(() => {});
+    } catch (e) {}
+  }
+  function updateFsBtn() {
+    document.getElementById('fsLabel').textContent = isFullscreen() ? '창 모드' : '전체화면';
+  }
+  document.addEventListener('fullscreenchange', updateFsBtn);
+  document.addEventListener('webkitfullscreenchange', updateFsBtn);
+  // 전체화면을 지원하지 않는 브라우저(예: 아이폰 사파리)에서는 버튼을 숨김
+  if (!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)) {
+    document.getElementById('fsBtn').style.display = 'none';
+  }
+
   // ========== 사운드 ==========
   let audioCtx = null;
   function playBeep(freq, dur, delay = 0) {
@@ -1162,12 +1199,9 @@
   // ========== 설정 모달 ==========
   function openSettings() {
     if (isRunning) stopTimer();
-    if (prepRunning) stopPrep();
     
     // 현재 상태를 모달에 복사
     editingStages = JSON.parse(JSON.stringify(stages));
-    document.getElementById('proPrepInput').value = prepConfig.pro / 60;
-    document.getElementById('conPrepInput').value = prepConfig.con / 60;
     
     renderPresets();
     renderStageList();
@@ -1190,12 +1224,10 @@
     });
   }
   
-  let activePresetKey = 'jeonbuk';
+  let activePresetKey = DEFAULT_PRESET;
   function loadPreset(key) {
     const p = presets[key];
     editingStages = JSON.parse(JSON.stringify(p.stages));
-    document.getElementById('proPrepInput').value = p.prepPro;
-    document.getElementById('conPrepInput').value = p.prepCon;
     activePresetKey = key;
     renderPresets();
     renderStageList();
@@ -1275,15 +1307,14 @@
     }
     
     stages = JSON.parse(JSON.stringify(editingStages));
-    prepConfig.pro = Math.round(parseFloat(document.getElementById('proPrepInput').value || 0) * 60);
-    prepConfig.con = Math.round(parseFloat(document.getElementById('conPrepInput').value || 0) * 60);
-    prepTime = { pro: prepConfig.pro, con: prepConfig.con };
     
     currentStage = -1;
     timeLeft = 0;
+    hideMc();
     
     buildProgress();
     updateDisplay();
+    updateFormatToggle();
     closeSettings();
   }
   
@@ -1320,11 +1351,13 @@
     if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
     else if (e.code === 'ArrowRight') { e.preventDefault(); nextStage(); }
     else if (e.code === 'ArrowLeft') { e.preventDefault(); prevStage(); }
+    else if (e.code === 'KeyF' && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); toggleFullscreen(); }
   });
   
   // ========== 초기화 ==========
   buildProgress();
   updateDisplay();
+  updateFormatToggle();
 </script>
 
 </body></html>
