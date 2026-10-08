@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="UTF-8">
+<title>CEDA 토론 진행 도구</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%;
+    background: #0a0e1a;
+    color: #fff;
+    font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
+    overflow: hidden;
+    user-select: none;
+  }
+  
+  .stage {
+    width: 100vw;
+    height: 100vh;
+    aspect-ratio: 16 / 9;
+    max-width: calc(100vh * 16 / 9);
+    max-height: calc(100vw * 9 / 16);
+    margin: auto;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    padding: 1.5vh 2vw;
+    gap: 1.5vh;
+  }
+  
+  /* 상단 논제 영역 */
+  .topic-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(90deg, rgba(59,130,246,0.15), rgba(239,68,68,0.15));
+    border-radius: 1vh;
+    padding: 1.2vh 2vw;
+    border: 1px solid rgba(255,255,255,0.1);
+    position: relative;
+    gap: 1.5vw;
+  }
+  .topic-label {
+    color: #fbbf24;
+    font-weight: 700;
+    font-size: 2.2vh;
+    letter-spacing: 0.1em;
+  }
+  .topic-text {
+    flex: 1;
+    font-size: 2.8vh;
+    font-weight: 600;
+    text-align: center;
+    background: transparent;
+    color: #fff;
+    border: none;
+    outline: none;
+    font-family: inherit;
+  }
+  .topic-text:focus {
+    background: rgba(255,255,255,0.05);
+    border-radius: 0.5vh;
+  }
+  .settings-btn {
+    background: rgba(251,191,36,0.2);
+    border: 1px solid rgba(251,191,36,0.4);
+    color: #fbbf24;
+    padding: 0.8vh 1.5vw;
+    border-radius: 0.8vh;
+    font-size: 1.8vh;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+  .settings-btn:hover { background: rgba(251,191,36,0.3); }
+  
+  /* 메인 영역 */
+  .main {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr;
+    gap: 2vw;
+    align-items: stretch;
+  }
+  
+  .team {
+    display: flex;
+    flex-direction: column;
+    border-radius: 1.5vh;
+    padding: 2vh 1.5vw;
+    border: 3px solid transparent;
+    transition: all 0.3s;
+    position: relative;
+  }
+  .team.pro {
+    background: linear-gradient(135deg, rgba(37,99,235,0.25), rgba(37,99,235,0.08));
+    border-color: rgba(59,130,246,0.4);
+  }
+  .team.con {
+    background: linear-gradient(135deg, rgba(220,38,38,0.25), rgba(220,38,38,0.08));
+    border-color: rgba(239,68,68,0.4);
+  }
+  .team.active {
+    border-width: 4px;
+    transform: scale(1.02);
+    box-shadow: 0 0 4vh currentColor;
+  }
+  .team.pro.active { border-color: #60a5fa; color: #60a5fa; }
+  .team.con.active { border-color: #f87171; color: #f87171; }
+  
+  .team-label {
+    font-size: 2vh;
+    font-weight: 600;
+    opacity: 0.7;
+    margin-bottom: 0.5vh;
+  }
+  .team-name {
+    font-size: 3.5vh;
+    font-weight: 800;
+    margin-bottom: 1.5vh;
+    background: transparent;
+    color: #fff;
+    border: none;
+    outline: none;
+    font-family: inherit;
+    width: 100%;
+  }
+  .team-name:focus {
+    background: rgba(255,255,255,0.05);
+    border-radius: 0.5vh;
+    padding: 0.3vh;
+  }
+  .team-position {
+    font-size: 5vh;
+    font-weight: 900;
+    margin-bottom: 1vh;
+  }
+  .pro .team-position { color: #60a5fa; }
+  .con .team-position { color: #f87171; }
+  
+  .prep-section {
+    margin-top: auto;
+    padding-top: 2vh;
+    border-top: 1px solid rgba(255,255,255,0.15);
+  }
+  .prep-label {
+    font-size: 1.6vh;
+    opacity: 0.6;
+    margin-bottom: 0.8vh;
+  }
+  .prep-time {
+    font-size: 3.5vh;
+    font-weight: 700;
+    margin-bottom: 1vh;
+    font-variant-numeric: tabular-nums;
+  }
+  .prep-btn {
+    width: 100%;
+    padding: 1.2vh;
+    border: none;
+    border-radius: 0.8vh;
+    font-size: 1.8vh;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+  .pro .prep-btn { background: #2563eb; color: #fff; }
+  .con .prep-btn { background: #dc2626; color: #fff; }
+  .prep-btn:hover { filter: brightness(1.2); }
+  .prep-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .prep-btn.active { background: #f59e0b !important; animation: pulse 1s infinite; }
+  
+  @keyframes pulse {
+    0%,100% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+  }
+  
+  /* 중앙 타이머 */
+  .center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.03);
+    border-radius: 1.5vh;
+    padding: 2vh;
+    position: relative;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .stage-name {
+    font-size: 3.2vh;
+    font-weight: 700;
+    margin-bottom: 1vh;
+    color: #fbbf24;
+    text-align: center;
+  }
+  .stage-counter {
+    font-size: 1.8vh;
+    opacity: 0.6;
+    margin-bottom: 1.5vh;
+  }
+  .timer {
+    font-size: 18vh;
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: #fff;
+    transition: color 0.3s;
+  }
+  .timer.warning { color: #fbbf24; }
+  .timer.danger { color: #ef4444; animation: blink 0.5s infinite; }
+  
+  @keyframes blink {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+  
+  .speaker-tag {
+    margin-top: 1.5vh;
+    padding: 0.8vh 2vw;
+    border-radius: 5vh;
+    font-size: 2.2vh;
+    font-weight: 700;
+  }
+  .speaker-tag.pro { background: #2563eb; }
+  .speaker-tag.con { background: #dc2626; }
+  .speaker-tag.both { background: #6b7280; }
+  
+  /* 하단 진행바 + 컨트롤 */
+  .bottom {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 2vw;
+    align-items: center;
+  }
+  
+  .progress {
+    display: flex;
+    gap: 0.5vw;
+    background: rgba(255,255,255,0.04);
+    padding: 1vh;
+    border-radius: 1vh;
+    overflow-x: auto;
+  }
+  .step {
+    flex: 1;
+    min-width: 6.5vw;
+    padding: 1.1vh 0.6vw;
+    border-radius: 0.6vh;
+    font-size: 1.7vh;
+    font-weight: 700;
+    text-align: center;
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.78);
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 2px solid transparent;
+    border-top: 3px solid transparent;
+    line-height: 1.35;
+    word-break: keep-all;
+  }
+  /* 진행 전 단계도 찬/반/양측을 색으로 구분 */
+  .step.pro  { background: rgba(37,99,235,0.18);  border-top-color: #60a5fa; color: #dbeafe; }
+  .step.con  { background: rgba(220,38,38,0.18);  border-top-color: #f87171; color: #fee2e2; }
+  .step.both { background: rgba(139,92,246,0.18); border-top-color: #a78bfa; color: #ede9fe; }
+  .step.done { background: rgba(34,197,94,0.22); border-top-color: #22c55e; color: #86efac; }
+  .step.current { 
+    background: #fbbf24; 
+    color: #0a0e1a; 
+    border-color: #fff;
+    box-shadow: 0 0 2.2vh rgba(251,191,36,0.6);
+    transform: translateY(-0.3vh);
+  }
+  .step .step-num { font-size: 1.3vh; opacity: 0.85; display: block; font-weight: 800; }
+  .step .step-dur { font-size: 1.25vh; opacity: 0.9; font-weight: 600; }
+  
+  .controls {
+    display: flex;
+    gap: 0.8vw;
+  }
+  .ctrl-btn {
+    padding: 1.5vh 1.5vw;
+    border: none;
+    border-radius: 1vh;
+    font-size: 1.8vh;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    white-space: nowrap;
+  }
+  .ctrl-btn:hover { background: rgba(255,255,255,0.2); }
+  .ctrl-btn.primary { 
+    background: #22c55e;
+    font-size: 2.2vh;
+    padding: 1.5vh 2.5vw;
+  }
+  .ctrl-btn.primary.paused { background: #f59e0b; }
+  .ctrl-btn.danger { background: rgba(239,68,68,0.3); }
+  .ctrl-btn.danger:hover { background: rgba(239,68,68,0.5); }
+  
+  .hint {
+    position: absolute;
+    bottom: 0.5vh;
+    right: 1vw;
+    font-size: 1.2vh;
+    opacity: 0.4;
+  }
+  
+  /* ========= 설정 모달 ========= */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    backdrop-filter: blur(8px);
+  }
+  .modal-overlay.show { display: flex; }
+  
+  .modal {
+    background: #141a2e;
+    border-radius: 1.5vh;
+    width: 90vw;
+    max-width: 1200px;
+    height: 88vh;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(255,255,255,0.1);
+    overflow: hidden;
+  }
+  .modal-header {
+    padding: 2vh 2vw;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .modal-title {
+    font-size: 2.6vh;
+    font-weight: 800;
+    color: #fbbf24;
+  }
+  .modal-close {
+    background: rgba(255,255,255,0.1);
+    border: none;
+    color: #fff;
+    width: 4vh;
+    height: 4vh;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 2vh;
+    font-family: inherit;
+  }
+  .modal-body {
+    flex: 1;
+    padding: 2vh 2vw;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2vw;
+  }
+  .modal-footer {
+    padding: 1.5vh 2vw;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1vw;
+  }
+  
+  .preset-section h3, .stages-section h3, .prep-config h3 {
+    font-size: 1.9vh;
+    margin-bottom: 1.2vh;
+    color: #fbbf24;
+    font-weight: 700;
+  }
+  
+  .preset-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1vh;
+    margin-bottom: 2.5vh;
+  }
+  .preset-btn {
+    padding: 1.5vh 1vw;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #fff;
+    border-radius: 0.8vh;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: left;
+    transition: all 0.2s;
+  }
+  .preset-btn:hover {
+    background: rgba(251,191,36,0.15);
+    border-color: rgba(251,191,36,0.5);
+  }
+  .preset-btn.active {
+    background: rgba(251,191,36,0.2);
+    border-color: #fbbf24;
+    box-shadow: 0 0 0 2px rgba(251,191,36,0.3);
+  }
+  .preset-btn.active .preset-name::before {
+    content: '✓ ';
+    color: #fbbf24;
+  }
+  
+  /* 프리셋 토스트 */
+  .preset-toast {
+    position: absolute;
+    top: 8vh;
+    left: 50%;
+    transform: translateX(-50%) translateY(-2vh);
+    background: #22c55e;
+    color: #fff;
+    padding: 1.2vh 2vw;
+    border-radius: 0.8vh;
+    font-size: 1.7vh;
+    font-weight: 700;
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+    z-index: 200;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+  .preset-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  .preset-name {
+    font-size: 1.8vh;
+    font-weight: 700;
+    margin-bottom: 0.5vh;
+  }
+  .preset-desc {
+    font-size: 1.4vh;
+    opacity: 0.6;
+  }
+  
+  .prep-config {
+    background: rgba(255,255,255,0.03);
+    padding: 1.5vh 1.5vw;
+    border-radius: 0.8vh;
+    margin-bottom: 1vh;
+  }
+  .prep-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 1vw;
+    align-items: center;
+    margin-bottom: 1vh;
+  }
+  .prep-row:last-child { margin-bottom: 0; }
+  .prep-row label {
+    font-size: 1.7vh;
+    font-weight: 600;
+  }
+  
+  .stage-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8vh;
+  }
+  .stage-row {
+    display: grid;
+    grid-template-columns: 3vh 1fr 6vw 5vw 6vw 4vh;
+    gap: 0.8vw;
+    align-items: center;
+    background: rgba(255,255,255,0.04);
+    padding: 1vh 1vw;
+    border-radius: 0.8vh;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .stage-num {
+    font-size: 1.6vh;
+    font-weight: 700;
+    color: #fbbf24;
+    text-align: center;
+  }
+  .stage-row input[type="text"] {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #fff;
+    padding: 0.8vh 0.8vw;
+    border-radius: 0.5vh;
+    font-family: inherit;
+    font-size: 1.6vh;
+    outline: none;
+  }
+  .stage-row input[type="number"] {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #fff;
+    padding: 0.8vh 0.5vw;
+    border-radius: 0.5vh;
+    font-family: inherit;
+    font-size: 1.6vh;
+    outline: none;
+    text-align: center;
+    width: 100%;
+  }
+  .stage-row input:focus {
+    border-color: #fbbf24;
+  }
+  .stage-row select {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #fff;
+    padding: 0.8vh 0.3vw;
+    border-radius: 0.5vh;
+    font-family: inherit;
+    font-size: 1.5vh;
+    outline: none;
+    cursor: pointer;
+  }
+  .stage-row select.pro { color: #60a5fa; }
+  .stage-row select.con { color: #f87171; }
+  .stage-row select.both { color: #fbbf24; }
+  .stage-row .delete-btn {
+    background: rgba(239,68,68,0.2);
+    border: none;
+    color: #f87171;
+    width: 100%;
+    height: 3.5vh;
+    border-radius: 0.5vh;
+    cursor: pointer;
+    font-size: 1.8vh;
+    font-family: inherit;
+  }
+  .stage-row .delete-btn:hover { background: rgba(239,68,68,0.4); }
+  
+  .stage-list-header {
+    display: grid;
+    grid-template-columns: 3vh 1fr 6vw 5vw 6vw 4vh;
+    gap: 0.8vw;
+    padding: 0 1vw 0.8vh;
+    font-size: 1.3vh;
+    opacity: 0.5;
+    font-weight: 600;
+    text-align: center;
+  }
+  .stage-list-header span:nth-child(2) { text-align: left; }
+  
+  .add-stage-btn {
+    margin-top: 1vh;
+    padding: 1.2vh;
+    background: rgba(34,197,94,0.15);
+    border: 1px dashed rgba(34,197,94,0.5);
+    color: #86efac;
+    border-radius: 0.8vh;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 1.6vh;
+    font-weight: 600;
+    width: 100%;
+  }
+  .add-stage-btn:hover { background: rgba(34,197,94,0.25); }
+  
+  .total-time {
+    font-size: 1.6vh;
+    color: #fbbf24;
+    font-weight: 600;
+  }
+  
+  .modal-btn {
+    padding: 1.4vh 2vw;
+    border: none;
+    border-radius: 0.8vh;
+    font-size: 1.8vh;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .modal-btn.primary { background: #22c55e; color: #fff; }
+  .modal-btn.primary:hover { background: #16a34a; }
+  .modal-btn.secondary { background: rgba(255,255,255,0.1); color: #fff; }
+  .modal-btn.secondary:hover { background: rgba(255,255,255,0.2); }
+</style>
+</head>
+<body id="artifacts-component-root-html">
+<div class="stage">
+  <!-- 논제 영역 -->
+  <div class="topic-bar">
+    <span class="topic-label">논제</span>
+    <input class="topic-text" id="topicInput" value="논제를 입력하세요 (클릭하여 수정)">
+    <button class="settings-btn" onclick="downloadHTML()" title="HTML 파일로 저장" style="background:rgba(34,197,94,0.2);border-color:rgba(34,197,94,0.4);color:#86efac">⬇ 다운로드</button>
+    <button class="settings-btn" onclick="openSettings()">⚙ 설정</button>
+  </div>
+  
+  <!-- 메인 영역 -->
+  <div class="main">
+    <!-- 찬성팀 -->
+    <div class="team pro" id="teamPro">
+      <div class="team-label">PRO · 찬성</div>
+      <input class="team-name" id="proName" value="찬성팀">
+      <div class="team-position">찬성</div>
+      <div class="prep-section">
+        <div class="prep-label" id="proPrepLabel">작전시간 (총 05:00)</div>
+        <div class="prep-time" id="proPrep">05:00</div>
+        <button class="prep-btn" id="proPrepBtn" onclick="togglePrep('pro')">작전시간 시작</button>
+      </div>
+    </div>
+    
+    <!-- 중앙 타이머 -->
+    <div class="center">
+      <div class="stage-name" id="stageName">대기 중</div>
+      <div class="stage-counter" id="stageCounter">시작 버튼을 눌러주세요</div>
+      <div class="timer" id="timer">00:00</div>
+      <div class="speaker-tag both" id="speakerTag">준비</div>
+      <div class="hint">Space: 시작/정지 · ←→: 이전/다음</div>
+    </div>
+    
+    <!-- 반대팀 -->
+    <div class="team con" id="teamCon">
+      <div class="team-label">CON · 반대</div>
+      <input class="team-name" id="conName" value="반대팀">
+      <div class="team-position">반대</div>
+      <div class="prep-section">
+        <div class="prep-label" id="conPrepLabel">작전시간 (총 05:00)</div>
+        <div class="prep-time" id="conPrep">05:00</div>
+        <button class="prep-btn" id="conPrepBtn" onclick="togglePrep('con')">작전시간 시작</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 하단: 진행바 + 컨트롤 -->
+  <div class="bottom">
+    <div class="progress" id="progress"><div class="step"><span class="step-num">1</span>찬성 1입론<br><span style="font-size:1vh;opacity:0.7">03:00</span></div><div class="step"><span class="step-num">2</span>반대 교차<br><span style="font-size:1vh;opacity:0.7">02:00</span></div><div class="step"><span class="step-num">3</span>반대 1입론<br><span style="font-size:1vh;opacity:0.7">03:00</span></div><div class="step"><span class="step-num">4</span>찬성 교차<br><span style="font-size:1vh;opacity:0.7">02:00</span></div><div class="step"><span class="step-num">5</span>찬성 2입론<br><span style="font-size:1vh;opacity:0.7">03:00</span></div><div class="step"><span class="step-num">6</span>반대 교차<br><span style="font-size:1vh;opacity:0.7">02:00</span></div><div class="step"><span class="step-num">7</span>반대 2입론<br><span style="font-size:1vh;opacity:0.7">03:00</span></div><div class="step"><span class="step-num">8</span>찬성 교차<br><span style="font-size:1vh;opacity:0.7">02:00</span></div><div class="step"><span class="step-num">9</span>반대 최종<br><span style="font-size:1vh;opacity:0.7">03:00</span></div><div class="step"><span class="step-num">10</span>찬성 최종<br><span style="font-size:1vh;opacity:0.7">03:00</span></div></div>
+    <div class="controls">
+      <button class="ctrl-btn" onclick="prevStage()">◀ 이전</button>
+      <button class="ctrl-btn primary" id="playBtn" onclick="togglePlay()">▶ 시작</button>
+      <button class="ctrl-btn" onclick="nextStage()">다음 ▶</button>
+      <button class="ctrl-btn danger" onclick="resetAll()">초기화</button>
+    </div>
+  </div>
+</div>
+
+<!-- 설정 모달 -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">⚙ 토론 설정</div>
+      <button class="modal-close" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="preset-toast" id="presetToast"></div>
+      <!-- 좌측: 프리셋 + 작전시간 -->
+      <div>
+        <div class="preset-section">
+          <h3>📋 프리셋 불러오기</h3>
+          <div class="preset-grid" id="presetGrid"></div>
+        </div>
+        
+        <div class="prep-config">
+          <h3>⏸ 작전시간 (Prep Time)</h3>
+          <div class="prep-row">
+            <label>찬성팀 (분)</label>
+            <input type="number" id="proPrepInput" min="0" max="30" step="0.5" value="5" style="width:6vw;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.15);color:#fff;padding:0.8vh;border-radius:0.5vh;font-family:inherit;font-size:1.7vh;text-align:center;outline:none;">
+          </div>
+          <div class="prep-row">
+            <label>반대팀 (분)</label>
+            <input type="number" id="conPrepInput" min="0" max="30" step="0.5" value="5" style="width:6vw;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.15);color:#fff;padding:0.8vh;border-radius:0.5vh;font-family:inherit;font-size:1.7vh;text-align:center;outline:none;">
+          </div>
+        </div>
+      </div>
+      
+      <!-- 우측: 단계 편집 -->
+      <div class="stages-section">
+        <h3>🎙 토론 단계 편집</h3>
+        <div class="stage-list-header">
+          <span>#</span>
+          <span>단계 이름</span>
+          <span>분</span>
+          <span>초</span>
+          <span>발언자</span>
+          <span></span>
+        </div>
+        <div class="stage-list" id="stageList"></div>
+        <button class="add-stage-btn" onclick="addStage()">+ 단계 추가</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <div class="total-time" id="totalTime"></div>
+      <div style="display:flex;gap:0.8vw">
+        <button class="modal-btn secondary" onclick="closeSettings()">취소</button>
+        <button class="modal-btn primary" onclick="saveSettings()">✓ 저장하고 적용</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ========== 프리셋 ==========
+  const presets = {
+    ceda: {
+      name: 'CEDA 표준 (한국 학교)',
+      desc: '입론·교차조사 각 2회 + 최종변론',
+      prepPro: 5, prepCon: 5,
+      stages: [
+        { name: '찬성 제1입론', sec: 180, side: 'pro', short: '찬성 1입론' },
+        { name: '반대 교차조사', sec: 120, side: 'con', short: '반대 교차' },
+        { name: '반대 제1입론', sec: 180, side: 'con', short: '반대 1입론' },
+        { name: '찬성 교차조사', sec: 120, side: 'pro', short: '찬성 교차' },
+        { name: '찬성 제2입론', sec: 180, side: 'pro', short: '찬성 2입론' },
+        { name: '반대 교차조사', sec: 120, side: 'con', short: '반대 교차' },
+        { name: '반대 제2입론', sec: 180, side: 'con', short: '반대 2입론' },
+        { name: '찬성 교차조사', sec: 120, side: 'pro', short: '찬성 교차' },
+        { name: '반대 최종변론', sec: 180, side: 'con', short: '반대 최종' },
+        { name: '찬성 최종변론', sec: 180, side: 'pro', short: '찬성 최종' },
+      ]
+    },
+    cedaShort: {
+      name: 'CEDA 축약형 (수업용)',
+      desc: '입론 1회 + 교차조사 + 최종변론',
+      prepPro: 3, prepCon: 3,
+      stages: [
+        { name: '찬성 입론', sec: 180, side: 'pro', short: '찬성 입론' },
+        { name: '반대 교차조사', sec: 90, side: 'con', short: '반대 교차' },
+        { name: '반대 입론', sec: 180, side: 'con', short: '반대 입론' },
+        { name: '찬성 교차조사', sec: 90, side: 'pro', short: '찬성 교차' },
+        { name: '반대 최종변론', sec: 120, side: 'con', short: '반대 최종' },
+        { name: '찬성 최종변론', sec: 120, side: 'pro', short: '찬성 최종' },
+      ]
+    },
+    parli: {
+      name: '의회식 토론',
+      desc: '정부·야당 입론 + 최종연설',
+      prepPro: 0, prepCon: 0,
+      stages: [
+        { name: '정부 제1입론', sec: 420, side: 'pro', short: '정부 1입론' },
+        { name: '야당 제1입론', sec: 480, side: 'con', short: '야당 1입론' },
+        { name: '정부 제2입론', sec: 480, side: 'pro', short: '정부 2입론' },
+        { name: '야당 제2입론', sec: 480, side: 'con', short: '야당 2입론' },
+        { name: '야당 최종연설', sec: 240, side: 'con', short: '야당 최종' },
+        { name: '정부 최종연설', sec: 300, side: 'pro', short: '정부 최종' },
+      ]
+    },
+    karpov: {
+      name: '칼 포퍼식 토론',
+      desc: '3인 1팀 입론·교차조사·반박',
+      prepPro: 8, prepCon: 8,
+      stages: [
+        { name: '찬성 1번 입론', sec: 360, side: 'pro', short: '찬성 1입론' },
+        { name: '반대 3번 교차조사', sec: 180, side: 'con', short: '반대 교차' },
+        { name: '반대 1번 입론', sec: 360, side: 'con', short: '반대 1입론' },
+        { name: '찬성 3번 교차조사', sec: 180, side: 'pro', short: '찬성 교차' },
+        { name: '찬성 2번 반박', sec: 300, side: 'pro', short: '찬성 반박' },
+        { name: '반대 1번 교차조사', sec: 180, side: 'con', short: '반대 교차' },
+        { name: '반대 2번 반박', sec: 300, side: 'con', short: '반대 반박' },
+        { name: '찬성 1번 교차조사', sec: 180, side: 'pro', short: '찬성 교차' },
+        { name: '찬성 3번 최종변론', sec: 300, side: 'pro', short: '찬성 최종' },
+        { name: '반대 3번 최종변론', sec: 300, side: 'con', short: '반대 최종' },
+      ]
+    },
+    classroom: {
+      name: '교실용 간이 토론',
+      desc: '짧고 빠르게, 발표·질의 위주',
+      prepPro: 2, prepCon: 2,
+      stages: [
+        { name: '찬성 입론', sec: 120, side: 'pro', short: '찬성 입론' },
+        { name: '반대 입론', sec: 120, side: 'con', short: '반대 입론' },
+        { name: '자유 토론', sec: 240, side: 'both', short: '자유 토론' },
+        { name: '찬성 정리발언', sec: 60, side: 'pro', short: '찬성 정리' },
+        { name: '반대 정리발언', sec: 60, side: 'con', short: '반대 정리' },
+      ]
+    },
+    jeonbuk: {
+      name: '전북형 토론모형 축약형',
+      desc: '평촌고 학교주도활동',
+      prepPro: 2, prepCon: 2,
+      stages: [
+        { name: '찬성 1번 입론', sec: 120, side: 'pro', short: '찬성① 입론' },
+        { name: '반대 1번 입론', sec: 120, side: 'con', short: '반대① 입론' },
+        { name: '찬성 3번 교차조사', sec: 90, side: 'pro', short: '찬성③ 교차' },
+        { name: '반대 3번 교차조사', sec: 90, side: 'con', short: '반대③ 교차' },
+        { name: '숙의', sec: 120, side: 'both', short: '숙의' },
+        { name: '반대 2번 반론', sec: 120, side: 'con', short: '반대② 반론' },
+        { name: '찬성 1번 교차조사', sec: 90, side: 'pro', short: '찬성① 교차' },
+        { name: '찬성 2번 반론', sec: 120, side: 'pro', short: '찬성② 반론' },
+        { name: '반대 1번 교차조사', sec: 90, side: 'con', short: '반대① 교차' },
+        { name: '상호토론', sec: 180, side: 'both', short: '상호토론' },
+        { name: '숙의', sec: 120, side: 'both', short: '숙의' },
+        { name: '반대 3번 최후 변론', sec: 120, side: 'con', short: '반대③ 최후' },
+        { name: '찬성 3번 최후 변론', sec: 120, side: 'pro', short: '찬성③ 최후' },
+      ]
+    },
+    custom: {
+      name: '빈 양식부터 시작',
+      desc: '단계를 직접 처음부터 추가',
+      prepPro: 0, prepCon: 0,
+      stages: []
+    },
+  };
+  
+  // ========== 상태 ==========
+  let stages = JSON.parse(JSON.stringify(presets.jeonbuk.stages));
+  let prepConfig = { pro: presets.jeonbuk.prepPro * 60, con: presets.jeonbuk.prepCon * 60 }; // 초 단위
+  let editingStages = []; // 모달 내 편집용
+  
+  let currentStage = -1;
+  let timeLeft = 0;
+  let isRunning = false;
+  let interval = null;
+  let prepTime = { pro: presets.jeonbuk.prepPro * 60, con: presets.jeonbuk.prepCon * 60 };
+  let prepRunning = null;
+  let prepInterval = null;
+  
+  // ========== 유틸 ==========
+  function fmt(s) {
+    s = Math.max(0, s);
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+  }
+  function fmtMin(s) {
+    return (s/60).toFixed(1).replace(/\.0$/,'') + '분';
+  }
+  
+  // ========== 진행바 ==========
+  // 진행바용 짧은 이름 생성 (제N토론자 번호를 원문자 ①②③…로 보존)
+  function makeShort(name) {
+    const n = String(name || '').trim();
+    const circled = (num) => (num >= 1 && num <= 9) ? '①②③④⑤⑥⑦⑧⑨'[num - 1] : '(' + num + ')';
+    const m = n.match(/^(찬성|반대|정부|야당)\s*(\d+)\s*번\s*(.+)$/);
+    if (m) {
+      const act = m[3].replace(/\s+/g, '');
+      return m[1] + circled(parseInt(m[2], 10)) + ' ' + act.slice(0, 2);
+    }
+    return n.length > 8 ? n.slice(0, 8) : n;
+  }
+
+  function buildProgress() {
+    const el = document.getElementById('progress');
+    el.innerHTML = '';
+    if (stages.length === 0) {
+      el.innerHTML = '<div style="flex:1;text-align:center;padding:1.5vh;opacity:0.5;font-size:1.5vh">⚙ 설정에서 토론 단계를 추가해주세요</div>';
+      return;
+    }
+    stages.forEach((s, i) => {
+      const div = document.createElement('div');
+      div.className = 'step ' + (s.side || '');
+      div.innerHTML = `<span class="step-num">${i+1}</span>${s.short || s.name}<br><span class="step-dur">${fmt(s.sec)}</span>`;
+      div.onclick = () => jumpTo(i);
+      el.appendChild(div);
+    });
+  }
+  
+  function updateProgress() {
+    const steps = document.querySelectorAll('.step');
+    steps.forEach((step, i) => {
+      step.classList.remove('done', 'current');
+      if (i < currentStage) step.classList.add('done');
+      if (i === currentStage) step.classList.add('current');
+    });
+  }
+  
+  // ========== 디스플레이 ==========
+  function updateDisplay() {
+    const timer = document.getElementById('timer');
+    const stageName = document.getElementById('stageName');
+    const stageCounter = document.getElementById('stageCounter');
+    const speakerTag = document.getElementById('speakerTag');
+    const teamPro = document.getElementById('teamPro');
+    const teamCon = document.getElementById('teamCon');
+    
+    teamPro.classList.remove('active');
+    teamCon.classList.remove('active');
+    
+    if (currentStage < 0 || stages.length === 0) {
+      timer.textContent = '00:00';
+      stageName.textContent = stages.length === 0 ? '단계 없음' : '대기 중';
+      stageCounter.textContent = stages.length === 0 ? '⚙ 설정에서 토론 단계를 추가하세요' : '시작 버튼을 눌러주세요';
+      speakerTag.textContent = '준비';
+      speakerTag.className = 'speaker-tag both';
+    } else {
+      const s = stages[currentStage];
+      timer.textContent = fmt(timeLeft);
+      stageName.textContent = s.name;
+      stageCounter.textContent = `${currentStage+1} / ${stages.length} 단계`;
+      
+      const proName = document.getElementById('proName').value;
+      const conName = document.getElementById('conName').value;
+      
+      if (s.side === 'pro') {
+        speakerTag.textContent = `🔵 ${proName} 발언`;
+        speakerTag.className = 'speaker-tag pro';
+        teamPro.classList.add('active');
+      } else if (s.side === 'con') {
+        speakerTag.textContent = `🔴 ${conName} 발언`;
+        speakerTag.className = 'speaker-tag con';
+        teamCon.classList.add('active');
+      } else {
+        speakerTag.textContent = `⚪ 양측 토론`;
+        speakerTag.className = 'speaker-tag both';
+        teamPro.classList.add('active');
+        teamCon.classList.add('active');
+      }
+    }
+    
+    timer.classList.remove('warning', 'danger');
+    if (currentStage >= 0 && timeLeft > 0) {
+      if (timeLeft <= 10) timer.classList.add('danger');
+      else if (timeLeft <= 30) timer.classList.add('warning');
+    }
+    
+    document.getElementById('proPrep').textContent = fmt(prepTime.pro);
+    document.getElementById('conPrep').textContent = fmt(prepTime.con);
+    document.getElementById('proPrepLabel').textContent = `작전시간 (총 ${fmt(prepConfig.pro)})`;
+    document.getElementById('conPrepLabel').textContent = `작전시간 (총 ${fmt(prepConfig.con)})`;
+    
+    const playBtn = document.getElementById('playBtn');
+    if (isRunning) {
+      playBtn.textContent = '⏸ 일시정지';
+      playBtn.classList.add('paused');
+    } else {
+      playBtn.textContent = currentStage < 0 ? '▶ 시작' : '▶ 계속';
+      playBtn.classList.remove('paused');
+    }
+    
+    // 작전시간 비활성화 처리
+    document.getElementById('proPrepBtn').disabled = (prepConfig.pro === 0);
+    document.getElementById('conPrepBtn').disabled = (prepConfig.con === 0);
+    
+    updateProgress();
+  }
+  
+  // ========== 단계 제어 ==========
+  function startStage(idx) {
+    stopTimer();
+    currentStage = idx;
+    timeLeft = stages[idx].sec;
+    updateDisplay();
+  }
+  
+  function togglePlay() {
+    if (stages.length === 0) {
+      alert('토론 단계가 없습니다. ⚙ 설정에서 단계를 추가해주세요.');
+      return;
+    }
+    if (currentStage < 0) {
+      startStage(0);
+      startTimer();
+    } else if (isRunning) {
+      stopTimer();
+    } else {
+      startTimer();
+    }
+  }
+  
+  function startTimer() {
+    if (prepRunning) stopPrep();
+    isRunning = true;
+    interval = setInterval(() => {
+      timeLeft--;
+      if (timeLeft === 30 || timeLeft === 10) playBeep(440, 0.15);
+      if (timeLeft <= 0) {
+        timeLeft = 0;
+        stopTimer();
+        playBeep(880, 0.5);
+        playBeep(880, 0.5, 0.6);
+      }
+      updateDisplay();
+    }, 1000);
+    updateDisplay();
+  }
+  
+  function stopTimer() {
+    isRunning = false;
+    if (interval) { clearInterval(interval); interval = null; }
+    updateDisplay();
+  }
+  
+  function nextStage() {
+    if (stages.length === 0) return;
+    if (currentStage < stages.length - 1) {
+      startStage(currentStage + 1);
+    } else if (currentStage === stages.length - 1) {
+      stopTimer();
+      alert('모든 토론 단계가 완료되었습니다.');
+    }
+  }
+  
+  function prevStage() {
+    if (stages.length === 0) return;
+    if (currentStage > 0) {
+      startStage(currentStage - 1);
+    } else if (currentStage === 0) {
+      stopTimer();
+      currentStage = -1;
+      timeLeft = 0;
+      updateDisplay();
+    }
+  }
+  
+  function jumpTo(idx) {
+    if (confirm(`${idx+1}단계 "${stages[idx].name}"(으)로 이동하시겠습니까?`)) {
+      startStage(idx);
+    }
+  }
+  
+  function resetAll() {
+    if (!confirm('모든 진행 상황과 작전시간을 초기화하시겠습니까?')) return;
+    stopTimer();
+    stopPrep();
+    currentStage = -1;
+    timeLeft = 0;
+    prepTime = { pro: prepConfig.pro, con: prepConfig.con };
+    updateDisplay();
+  }
+  
+  // ========== 작전시간 ==========
+  function togglePrep(side) {
+    if (prepConfig[side] === 0) return;
+    if (prepRunning === side) {
+      stopPrep();
+    } else {
+      if (prepTime[side] <= 0) {
+        alert('남은 작전시간이 없습니다.');
+        return;
+      }
+      if (isRunning) stopTimer();
+      stopPrep();
+      prepRunning = side;
+      prepInterval = setInterval(() => {
+        prepTime[side]--;
+        if (prepTime[side] <= 0) {
+          prepTime[side] = 0;
+          stopPrep();
+          playBeep(880, 0.4);
+        }
+        updateDisplay();
+      }, 1000);
+      updatePrepBtns();
+    }
+  }
+  
+  function stopPrep() {
+    if (prepInterval) { clearInterval(prepInterval); prepInterval = null; }
+    prepRunning = null;
+    updatePrepBtns();
+  }
+  
+  function updatePrepBtns() {
+    const proBtn = document.getElementById('proPrepBtn');
+    const conBtn = document.getElementById('conPrepBtn');
+    proBtn.classList.toggle('active', prepRunning === 'pro');
+    conBtn.classList.toggle('active', prepRunning === 'con');
+    proBtn.textContent = prepRunning === 'pro' ? '작전시간 종료' : '작전시간 시작';
+    conBtn.textContent = prepRunning === 'con' ? '작전시간 종료' : '작전시간 시작';
+  }
+  
+  // ========== 사운드 ==========
+  let audioCtx = null;
+  function playBeep(freq, dur, delay = 0) {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      setTimeout(() => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.frequency.value = freq;
+        osc.type = 'sine';
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+        osc.start();
+        osc.stop(audioCtx.currentTime + dur);
+      }, delay * 1000);
+    } catch(e) {}
+  }
+  
+  // ========== 설정 모달 ==========
+  function openSettings() {
+    if (isRunning) stopTimer();
+    if (prepRunning) stopPrep();
+    
+    // 현재 상태를 모달에 복사
+    editingStages = JSON.parse(JSON.stringify(stages));
+    document.getElementById('proPrepInput').value = prepConfig.pro / 60;
+    document.getElementById('conPrepInput').value = prepConfig.con / 60;
+    
+    renderPresets();
+    renderStageList();
+    document.getElementById('settingsModal').classList.add('show');
+  }
+  
+  function closeSettings() {
+    document.getElementById('settingsModal').classList.remove('show');
+  }
+  
+  function renderPresets() {
+    const grid = document.getElementById('presetGrid');
+    grid.innerHTML = '';
+    Object.entries(presets).forEach(([key, p]) => {
+      const btn = document.createElement('button');
+      btn.className = 'preset-btn' + (key === activePresetKey ? ' active' : '');
+      btn.innerHTML = `<div class="preset-name">${p.name}</div><div class="preset-desc">${p.desc}</div>`;
+      btn.onclick = () => loadPreset(key);
+      grid.appendChild(btn);
+    });
+  }
+  
+  let activePresetKey = 'jeonbuk';
+  function loadPreset(key) {
+    const p = presets[key];
+    editingStages = JSON.parse(JSON.stringify(p.stages));
+    document.getElementById('proPrepInput').value = p.prepPro;
+    document.getElementById('conPrepInput').value = p.prepCon;
+    activePresetKey = key;
+    renderPresets();
+    renderStageList();
+    // 시각적 피드백
+    const toast = document.getElementById('presetToast');
+    toast.textContent = `✓ "${p.name}" 프리셋을 불러왔습니다`;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 1800);
+  }
+  
+  function renderStageList() {
+    const list = document.getElementById('stageList');
+    list.innerHTML = '';
+    editingStages.forEach((s, i) => {
+      const min = Math.floor(s.sec / 60);
+      const sec = s.sec % 60;
+      const row = document.createElement('div');
+      row.className = 'stage-row';
+      row.innerHTML = `
+        <div class="stage-num">${i+1}</div>
+        <input type="text" value="${s.name}" placeholder="단계 이름" oninput="updateStage(${i},'name',this.value)" />
+        <input type="number" min="0" max="60" value="${min}" oninput="updateStageTime(${i},'min',this.value)" />
+        <input type="number" min="0" max="59" value="${sec}" oninput="updateStageTime(${i},'sec',this.value)" />
+        <select class="${s.side}" onchange="updateStage(${i},'side',this.value); this.className=this.value;">
+          <option value="pro" ${s.side==='pro'?'selected':''}>찬성</option>
+          <option value="con" ${s.side==='con'?'selected':''}>반대</option>
+          <option value="both" ${s.side==='both'?'selected':''}>양측</option>
+        </select>
+        <button class="delete-btn" onclick="deleteStage(${i})">✕</button>
+      `;
+      list.appendChild(row);
+    });
+    updateTotalTime();
+  }
+  
+  function updateStage(idx, field, value) {
+    editingStages[idx][field] = value;
+    if (field === 'name') {
+      editingStages[idx].short = makeShort(value);
+    }
+  }
+  
+  function updateStageTime(idx, unit, value) {
+    const v = parseInt(value) || 0;
+    const cur = editingStages[idx].sec;
+    if (unit === 'min') {
+      editingStages[idx].sec = v * 60 + (cur % 60);
+    } else {
+      editingStages[idx].sec = Math.floor(cur / 60) * 60 + Math.min(59, v);
+    }
+    updateTotalTime();
+  }
+  
+  function deleteStage(idx) {
+    editingStages.splice(idx, 1);
+    renderStageList();
+  }
+  
+  function addStage() {
+    editingStages.push({ name: '새 단계', sec: 180, side: 'pro', short: '새 단계' });
+    renderStageList();
+  }
+  
+  function updateTotalTime() {
+    const total = editingStages.reduce((sum, s) => sum + s.sec, 0);
+    const min = Math.floor(total / 60);
+    const sec = total % 60;
+    document.getElementById('totalTime').textContent = 
+      `📊 ${editingStages.length}개 단계 · 총 발언시간 ${min}분 ${sec}초`;
+  }
+  
+  function saveSettings() {
+    // 유효성 검사
+    for (const s of editingStages) {
+      if (!s.name.trim()) { alert('단계 이름을 모두 입력해주세요.'); return; }
+      if (s.sec <= 0) { alert(`"${s.name}" 단계의 시간을 1초 이상으로 설정해주세요.`); return; }
+    }
+    
+    stages = JSON.parse(JSON.stringify(editingStages));
+    prepConfig.pro = Math.round(parseFloat(document.getElementById('proPrepInput').value || 0) * 60);
+    prepConfig.con = Math.round(parseFloat(document.getElementById('conPrepInput').value || 0) * 60);
+    prepTime = { pro: prepConfig.pro, con: prepConfig.con };
+    
+    currentStage = -1;
+    timeLeft = 0;
+    
+    buildProgress();
+    updateDisplay();
+    closeSettings();
+  }
+  
+  // ========== HTML 다운로드 ==========
+  function downloadHTML() {
+    // 현재 입력값들을 HTML에 반영 (다운로드한 파일이 현재 상태로 열리도록)
+    const topicEl = document.getElementById('topicInput');
+    const proEl = document.getElementById('proName');
+    const conEl = document.getElementById('conName');
+    topicEl.setAttribute('value', topicEl.value);
+    proEl.setAttribute('value', proEl.value);
+    conEl.setAttribute('value', conEl.value);
+    
+    const html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}`;
+    a.download = `CEDA_토론_진행도구_${dateStr}.html`;
+    
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+  
+  // ========== 키보드 ==========
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+    if (document.getElementById('settingsModal').classList.contains('show')) return;
+    if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+    else if (e.code === 'ArrowRight') { e.preventDefault(); nextStage(); }
+    else if (e.code === 'ArrowLeft') { e.preventDefault(); prevStage(); }
+  });
+  
+  // ========== 초기화 ==========
+  buildProgress();
+  updateDisplay();
+</script>
+
+</body></html>
