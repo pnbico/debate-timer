@@ -59,6 +59,77 @@
     background: rgba(255,255,255,0.05);
     border-radius: 0.5vh;
   }
+  .topic-text::placeholder { color: rgba(255,255,255,0.4); font-weight: 500; }
+
+  /* 논제 고르기 */
+  .topic-picker { position: relative; flex-shrink: 0; }
+  .topic-pick-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    color: #fbbf24;
+    font-weight: 700;
+    font-size: max(2.2vh, 13px);
+    letter-spacing: 0.1em;
+    font-family: inherit;
+    background: rgba(251,191,36,0.12);
+    border: 1px solid rgba(251,191,36,0.45);
+    border-radius: 0.8vh;
+    padding: 0.6vh 0.9vw 0.6vh 1.1vw;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .topic-pick-btn:hover, .topic-pick-btn[aria-expanded="true"] { background: rgba(251,191,36,0.25); }
+  .topic-pick-btn .caret { letter-spacing: 0; font-size: 0.8em; transition: transform 0.15s; }
+  .topic-pick-btn[aria-expanded="true"] .caret { transform: rotate(180deg); }
+  .topic-menu {
+    position: absolute;
+    top: calc(100% + 1vh);
+    left: 0;
+    z-index: 60;
+    min-width: max(46vh, 320px);
+    padding: 0.8vh;
+    background: #141a2e;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 1.2vh;
+    box-shadow: 0 1.5vh 4vh rgba(0,0,0,0.6);
+    display: none;
+    flex-direction: column;
+    gap: 0.3vh;
+  }
+  .topic-menu.show { display: flex; }
+  .topic-option {
+    display: flex;
+    align-items: center;
+    gap: 0.9em;
+    width: 100%;
+    text-align: left;
+    padding: 1.1vh 1.2vw;
+    border: none;
+    border-radius: 0.8vh;
+    background: transparent;
+    color: #fff;
+    font-family: inherit;
+    font-size: max(2vh, 13px);
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .topic-option:hover, .topic-option:focus-visible { background: rgba(251,191,36,0.15); outline: none; }
+  .topic-option .opt-num {
+    flex-shrink: 0;
+    width: 1.8em; height: 1.8em;
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.1);
+    color: #fbbf24;
+    font-size: 0.8em;
+    font-weight: 800;
+  }
+  .topic-option .opt-check { margin-left: auto; color: #fbbf24; visibility: hidden; padding-left: 1em; }
+  .topic-option.active { background: rgba(251,191,36,0.2); }
+  .topic-option.active .opt-check { visibility: visible; }
+  .topic-option.custom { border-top: 1px solid rgba(255,255,255,0.1); border-radius: 0 0 0.8vh 0.8vh; margin-top: 0.3vh; color: #fde68a; }
   .settings-btn {
     background: rgba(251,191,36,0.2);
     border: 1px solid rgba(251,191,36,0.4);
@@ -77,6 +148,10 @@
     background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.25); color: #e5e7eb; }
   .fs-btn:hover { background: rgba(255,255,255,0.16); }
   .fs-btn svg { width: 1.1em; height: 1.1em; }
+  @media (max-width: 1100px) {
+    .topic-bar .btn-label { display: none; }
+    .fs-btn { gap: 0; }
+  }
 
   /* 3대3 / 4대4 빠른 전환 */
   .format-toggle {
@@ -591,15 +666,18 @@
 <div class="stage">
   <!-- 논제 영역 -->
   <div class="topic-bar">
-    <span class="topic-label">논제</span>
-    <input class="topic-text" id="topicInput" value="논제를 입력하세요 (클릭하여 수정)">
+    <div class="topic-picker" id="topicPicker">
+      <button class="topic-pick-btn" id="topicPickBtn" onclick="toggleTopicMenu()" aria-haspopup="true" aria-expanded="false" title="논제 고르기">논제 <span class="caret">▾</span></button>
+      <div class="topic-menu" id="topicMenu" role="menu"></div>
+    </div>
+    <input class="topic-text" id="topicInput" value="" placeholder="← '논제'를 눌러 고르거나 여기에 직접 입력하세요">
     <div class="format-toggle" role="group" aria-label="토론 형식 바로 바꾸기">
       <button class="format-btn" data-preset="perf33" onclick="switchFormat('perf33')" title="수행평가 3대3 토론으로 바꾸기">3대3</button>
       <button class="format-btn" data-preset="perf44" onclick="switchFormat('perf44')" title="수행평가 4대4 토론으로 바꾸기">4대4</button>
     </div>
-    <button class="settings-btn fs-btn" id="fsBtn" onclick="toggleFullscreen()" title="전체화면 (F)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span id="fsLabel">전체화면</span></button>
-    <button class="settings-btn" onclick="downloadHTML()" title="HTML 파일로 저장" style="background:rgba(34,197,94,0.2);border-color:rgba(34,197,94,0.4);color:#86efac">⬇ 다운로드</button>
-    <button class="settings-btn" onclick="openSettings()">⚙ 설정</button>
+    <button class="settings-btn fs-btn" id="fsBtn" onclick="toggleFullscreen()" title="전체화면 (F)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span id="fsLabel" class="btn-label">전체화면</span></button>
+    <button class="settings-btn" onclick="downloadHTML()" title="HTML 파일로 저장" style="background:rgba(34,197,94,0.2);border-color:rgba(34,197,94,0.4);color:#86efac">⬇<span class="btn-label"> 다운로드</span></button>
+    <button class="settings-btn" onclick="openSettings()" title="설정">⚙<span class="btn-label"> 설정</span></button>
   </div>
   
   <!-- 메인 영역 -->
@@ -1192,8 +1270,8 @@
   function updateFsBtn() {
     document.getElementById('fsLabel').textContent = isFullscreen() ? '창 모드' : '전체화면';
   }
-  document.addEventListener('fullscreenchange', updateFsBtn);
-  document.addEventListener('webkitfullscreenchange', updateFsBtn);
+  document.addEventListener('fullscreenchange', () => { updateFsBtn(); setTimeout(fitTopic, 50); });
+  document.addEventListener('webkitfullscreenchange', () => { updateFsBtn(); setTimeout(fitTopic, 50); });
   // 전체화면을 지원하지 않는 브라우저(예: 아이폰 사파리)에서는 버튼을 숨김
   if (!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)) {
     document.getElementById('fsBtn').style.display = 'none';
@@ -1367,9 +1445,93 @@
     URL.revokeObjectURL(url);
   }
   
+  // ========== 논제 고르기 ==========
+  const TOPICS = [
+    '돈으로 행복을 살 수 있다',
+    '인공지능의 창작물도 예술성이 있다',
+    '능력에 따른 분배는 정의롭다',
+    '유전자 편집 기술을 인간의 능력 강화에 사용해도 된다',
+    '16세 미만 청소년의 SNS 사용을 불법화해야 한다',
+    '사형 집행을 재개해야 한다',
+  ];
+
+  function renderTopicMenu() {
+    const menu = document.getElementById('topicMenu');
+    const cur = document.getElementById('topicInput').value.trim();
+    const matched = TOPICS.indexOf(cur);
+    menu.textContent = '';
+    const addOption = (numText, label, extraClass, active, onPick) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'topic-option' + (extraClass ? ' ' + extraClass : '') + (active ? ' active' : '');
+      b.setAttribute('role', 'menuitem');
+      const n = document.createElement('span'); n.className = 'opt-num'; n.textContent = numText;
+      const t = document.createElement('span'); t.textContent = label;
+      const c = document.createElement('span'); c.className = 'opt-check'; c.textContent = '✓';
+      b.append(n, t, c);
+      b.onclick = onPick;
+      menu.appendChild(b);
+    };
+    TOPICS.forEach((topic, i) => addOption(String(i + 1), topic, '', i === matched, () => pickTopic(topic)));
+    addOption('✎', '직접 입력', 'custom', matched < 0 && cur !== '', () => pickTopic(null));
+  }
+
+  function toggleTopicMenu(force) {
+    const menu = document.getElementById('topicMenu');
+    const open = typeof force === 'boolean' ? force : !menu.classList.contains('show');
+    if (open) renderTopicMenu();
+    menu.classList.toggle('show', open);
+    document.getElementById('topicPickBtn').setAttribute('aria-expanded', String(open));
+  }
+
+  // topic: 고른 논제 문장 / null이면 '직접 입력' (칸을 비우고 바로 타이핑할 수 있게)
+  function pickTopic(topic) {
+    const input = document.getElementById('topicInput');
+    toggleTopicMenu(false);
+    if (topic === null) {
+      input.value = '';
+      fitTopic();
+      input.focus();
+    } else {
+      input.value = topic;   // 고른 뒤에도 칸에서 자유롭게 고칠 수 있음
+      fitTopic();
+      if (document.activeElement) document.activeElement.blur();   // Space로 바로 시작할 수 있게
+    }
+    if (currentStage < 0) showOpening();
+  }
+
+  // 논제가 길어 칸을 넘치면 글자 크기를 줄여 한 줄에 다 보이게 (최대 60%까지)
+  const topicMeasure = document.createElement('canvas').getContext('2d');
+  function fitTopic() {
+    const el = document.getElementById('topicInput');
+    el.style.fontSize = '';
+    const cs = getComputedStyle(el);
+    const base = parseFloat(cs.fontSize);
+    const text = el.value || el.placeholder;
+    topicMeasure.font = `${cs.fontWeight} ${base}px ${cs.fontFamily}`;
+    const w = topicMeasure.measureText(text).width;
+    const avail = el.clientWidth - 12;
+    if (avail > 0 && w > avail) el.style.fontSize = Math.max(base * avail / w, base * 0.6) + 'px';
+  }
+
+  // 메뉴 바깥을 누르면 닫기
+  document.addEventListener('click', (e) => {
+    if (!document.getElementById('topicMenu').classList.contains('show')) return;
+    if (!document.getElementById('topicPicker').contains(e.target)) toggleTopicMenu(false);
+  });
+  window.addEventListener('resize', fitTopic);
+
   // ========== 키보드 ==========
   document.addEventListener('keydown', (e) => {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+    // 논제 메뉴가 열려 있으면 Esc로 닫기만 하고 다른 단축키는 막음
+    if (document.getElementById('topicMenu').classList.contains('show')) {
+      if (e.code === 'Escape') { e.preventDefault(); toggleTopicMenu(false); document.getElementById('topicPickBtn').focus(); }
+      return;
+    }
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') {
+      if (e.target.id === 'topicInput' && e.code === 'Enter') e.target.blur();   // Enter로 입력 마치기
+      return;
+    }
     if (document.getElementById('settingsModal').classList.contains('show')) return;
     if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
     else if (e.code === 'ArrowRight') { e.preventDefault(); nextStage(); }
@@ -1379,6 +1541,7 @@
   
   // 논제를 고치면 시작 전 멘트도 바로 바뀜
   document.getElementById('topicInput').addEventListener('input', () => {
+    fitTopic();
     if (currentStage < 0) showOpening();
   });
 
@@ -1387,6 +1550,7 @@
   updateDisplay();
   updateFormatToggle();
   showOpening();
+  fitTopic();
 </script>
 
 </body></html>
