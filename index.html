@@ -313,6 +313,11 @@
     visibility: hidden;
   }
   .mc-line.show { visibility: visible; }
+  .mc-line.quiet {
+    color: rgba(255,255,255,0.6);
+    background: rgba(255,255,255,0.04);
+    border-color: rgba(255,255,255,0.15);
+  }
   .mc-line .mc-tag {
     flex-shrink: 0;
     margin-right: 0.8em;
@@ -1172,30 +1177,52 @@
     return m ? `${m}분` : `${s}초`;
   }
 
-  // idx번째 단계를 안내하는 사회자 멘트 (idx가 범위를 넘으면 마무리 멘트)
-  function mcScript(idx) {
-    if (idx >= stages.length) return '시간이 다 되었습니다. 이상으로 모든 토론 순서를 마치겠습니다. 수고 많으셨습니다.';
-    const s = stages[idx];
-    const t = fmtKor(s.sec);
-    const name = String(s.name || '').trim();
-    const plain = name.replace(/\s*\([^)]*\)\s*$/, '');
+  const QUIET_MC = '(사회자 멘트 없이 차례대로 진행)';
+
+  // '찬성 1토론자 입론 (쟁점1)' → { side: '찬성', num: '1', act: '입론', issue: '쟁점1' }
+  function parseStage(st) {
+    const name = String((st && st.name) || '').trim();
     const m = name.match(/^(찬성|반대|정부|야당)\s*(\d+)\s*(?:번|토론자)\s*(.+?)\s*(?:\(([^)]*)\))?$/);
+    return m ? { side: m[1], num: m[2], act: m[3], issue: m[4] || '' } : null;
+  }
+
+  // 토론자별로 나눠 재는 입론·반론 단계 (진행 순서 번호가 1-1, 1-2 …처럼 붙은 단계)
+  function isSplit(st) {
+    return !!(st && st.no && String(st.no).includes('-'));
+  }
+
+  // idx번째 단계를 안내하는 사회자 멘트 → { text, quiet }
+  // (idx가 범위를 넘으면 마무리 멘트, quiet이면 멘트 없이 진행한다는 안내)
+  function mcScript(idx) {
+    if (idx >= stages.length) return { text: '시간이 다 되었습니다. 이상으로 모든 토론 순서를 마치겠습니다. 수고 많으셨습니다.' };
+    const s = stages[idx], prev = stages[idx - 1];
+    const t = fmtKor(s.sec);
+    const plain = String(s.name || '').trim().replace(/\s*\([^)]*\)\s*$/, '');
+    const cur = parseStage(s), before = parseStage(prev);
+
+    // 입론끼리, 반론끼리 이어지는 토론자 사이: 멘트 없이 차례대로 진행
+    if (isSplit(s) && isSplit(prev) && cur && before && cur.act === before.act) {
+      return { text: QUIET_MC, quiet: true };
+    }
+
     let next;
-    if (m) {
-      const [, side, num, act, issue] = m;
-      const about = issue ? `${issue}에 대해 ` : '';
-      const verb = act.includes('교차') ? '질문해' : '발언해';
-      next = `다음은 ${side} 측 ${num}토론자의 ${act}입니다. ${about}${t} 동안 ${verb} 주십시오.`;
+    if (isSplit(s) && cur) {
+      // 입론·반론 묶음의 첫 토론자: 그 측 전체를 한 번에 안내
+      next = `다음은 ${cur.side} 측 ${cur.act}입니다. ${cur.num}토론자부터 차례대로 ${t}씩 발언해 주세요.`;
+    } else if (cur) {
+      const about = cur.issue ? `${cur.issue}에 대해 ` : '';
+      const verb = cur.act.includes('교차') ? '실시해' : '발언해';
+      next = `다음은 ${cur.side} 측 ${cur.num}토론자의 ${cur.act}입니다. ${about}${t} 동안 ${verb} 주십시오.`;
     } else if (plain.startsWith('숙의')) {
       next = `다음은 숙의 시간입니다. 양 팀은 ${t} 동안 협의해 주십시오.`;
     } else if (plain.startsWith('상호토론') || plain.startsWith('자유')) {
       next = `다음은 ${plain}입니다. 양측은 ${t} 동안 자유롭게 발언해 주십시오.`;
     } else if (s.side === 'pro' || s.side === 'con') {
-      next = `다음은 ${plain}입니다. ${t} 동안 발언해 주십시오.`;
+      next = `다음은 ${plain}입니다. ${t} 동안 ${plain.includes('교차') ? '실시해' : '발언해'} 주십시오.`;
     } else {
       next = `다음은 ${plain} 순서입니다. ${t} 동안 진행하겠습니다.`;
     }
-    return '시간이 다 되었습니다. ' + next;
+    return { text: '시간이 다 되었습니다. ' + next };
   }
 
   // 토론 시작 전 멘트 (논제 칸 내용과 동기화)
@@ -1205,25 +1232,34 @@
     // 논제를 아직 안 적었으면 논제 부분을 빼고, 앞뒤에 따옴표를 직접 적었으면 겹치지 않게 정리
     const topic = (raw && raw !== TOPIC_PLACEHOLDER) ? raw.replace(/^['"‘’“”]+|['"‘’“”]+$/g, '').trim() : '';
     const head = topic
-      ? `지금부터 '${topic}'에 대한 토론을 시작하겠습니다.`
+      ? `지금부터 ‘${topic}’에 대한 토론을 시작하겠습니다.`
       : '지금부터 토론을 시작하겠습니다.';
-    return head + ' 찬성 측부터 입론을 시작해주세요.';
+    // 첫 단계가 토론자별로 나눈 입론이면 순서·시간 안내를 덧붙임
+    const first = stages[0], fp = parseStage(first);
+    const tail = (isSplit(first) && fp)
+      ? ` ${fp.num}토론자부터 차례대로 ${fmtKor(first.sec)}씩 발언해 주세요.`
+      : '';
+    return head + ' 찬성 측부터 입론을 시작해주세요.' + tail;
   }
 
-  function setMc(text) {
+  function setMc(text, quiet) {
     const el = document.getElementById('mcLine');
     el.textContent = '';
-    const tag = document.createElement('span');
-    tag.className = 'mc-tag';
-    tag.textContent = '사회자';
-    el.appendChild(tag);
+    if (!quiet) {
+      const tag = document.createElement('span');
+      tag.className = 'mc-tag';
+      tag.textContent = '사회자';
+      el.appendChild(tag);
+    }
     el.appendChild(document.createTextNode(text));
+    el.classList.toggle('quiet', !!quiet);
     el.classList.add('show');
   }
 
   // 단계 시간이 끝났을 때: 다음 단계 안내
   function showMc() {
-    setMc(mcScript(currentStage + 1));
+    const r = mcScript(currentStage + 1);
+    setMc(r.text, r.quiet);
   }
 
   // 시작 전(대기 상태)일 때: 토론 시작 멘트
@@ -1234,7 +1270,7 @@
 
   function hideMc() {
     const el = document.getElementById('mcLine');
-    el.classList.remove('show');
+    el.classList.remove('show', 'quiet');
     el.textContent = '';
   }
 
