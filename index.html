@@ -211,15 +211,9 @@
   .team.pro.active { border-color: #60a5fa; color: #60a5fa; }
   .team.con.active { border-color: #f87171; color: #f87171; }
   
-  .team-label {
-    font-size: 2vh;
-    font-weight: 600;
-    opacity: 0.7;
-    margin-bottom: 0.5vh;
-  }
   .team-name {
-    font-size: 3.5vh;
-    font-weight: 800;
+    font-size: max(2.6vh, 13px);
+    font-weight: 700;
     margin-bottom: 1.5vh;
     background: transparent;
     color: #fff;
@@ -233,11 +227,57 @@
     border-radius: 0.5vh;
     padding: 0.3vh;
   }
+  .team-name::placeholder { color: rgba(255,255,255,0.42); font-weight: 600; }
   .team-position {
     font-size: 5vh;
     font-weight: 900;
-    margin-bottom: 1vh;
+    margin-bottom: 0.6vh;
+    line-height: 1.15;
   }
+
+  /* 토론자 슬롯 */
+  .slots {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 1.1vh;
+  }
+  .slot {
+    flex: 1 1 0;
+    max-height: 15vh;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.8vw;
+    padding: 0.8vh 1vw;
+    border-radius: 1.1vh;
+    background: rgba(255,255,255,0.05);
+    border: 2px solid rgba(255,255,255,0.1);
+    transition: background 0.25s, border-color 0.25s, transform 0.25s, box-shadow 0.25s;
+  }
+  .slot-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.3vh; }
+  .slot-title { display: flex; align-items: baseline; gap: 0.6em; color: rgba(255,255,255,0.88); font-weight: 800; font-size: max(2.3vh, 13px); white-space: nowrap; }
+  .slot-issue { color: rgba(255,255,255,0.5); font-weight: 600; font-size: 0.72em; }
+  .slot-roles { color: rgba(255,255,255,0.5); font-weight: 500; font-size: max(1.5vh, 10px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .slot-badge {
+    flex-shrink: 0;
+    visibility: hidden;
+    padding: 0.35em 0.8em;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: max(1.6vh, 11px);
+    background: #fff;
+    white-space: nowrap;
+  }
+  .slot.on { transform: translateX(0.3vw); }
+  .slot.on .slot-title, .slot.on .slot-roles, .slot.on .slot-issue { color: #fff; }
+  .slot.on .slot-badge { visibility: visible; }
+  .pro .slot.on { background: rgba(37,99,235,0.55); border-color: #93c5fd; box-shadow: 0 0 2.2vh rgba(96,165,250,0.45); }
+  .con .slot.on { background: rgba(220,38,38,0.5);  border-color: #fca5a5; box-shadow: 0 0 2.2vh rgba(248,113,113,0.45); }
+  .pro .slot-badge { color: #1d4ed8; }
+  .con .slot-badge { color: #b91c1c; }
   .pro .team-position { color: #60a5fa; }
   .con .team-position { color: #f87171; }
   
@@ -689,9 +729,9 @@
   <div class="main">
     <!-- 찬성팀 -->
     <div class="team pro" id="teamPro">
-      <div class="team-label">PRO · 찬성</div>
-      <input class="team-name" id="proName" value="찬성팀">
       <div class="team-position">찬성</div>
+      <input class="team-name" id="proName" value="" placeholder="팀 이름 :" aria-label="찬성 팀 이름">
+      <div class="slots" id="proSlots"></div>
     </div>
     
     <!-- 중앙 타이머 -->
@@ -706,9 +746,9 @@
     
     <!-- 반대팀 -->
     <div class="team con" id="teamCon">
-      <div class="team-label">CON · 반대</div>
-      <input class="team-name" id="conName" value="반대팀">
       <div class="team-position">반대</div>
+      <input class="team-name" id="conName" value="" placeholder="팀 이름 :" aria-label="반대 팀 이름">
+      <div class="slots" id="conSlots"></div>
     </div>
   </div>
   
@@ -961,6 +1001,7 @@
     el.innerHTML = '';
     el.scrollLeft = 0;
     lastScrolledStage = null;
+    buildSlots();
     if (stages.length === 0) {
       el.innerHTML = '<div style="flex:1;text-align:center;padding:1.5vh;opacity:0.5;font-size:1.5vh">⚙ 설정에서 토론 단계를 추가해주세요</div>';
       return;
@@ -1001,6 +1042,77 @@
     }
   }
   
+  // ========== 토론자 슬롯 ==========
+  const SIDE_KEY = { '찬성': 'pro', '정부': 'pro', '반대': 'con', '야당': 'con' };
+
+  // 각 측 토론자 수와 토론자별 맡은 순서(입론·교차조사·반론·최후변론)를 단계 목록에서 뽑음
+  function slotInfo() {
+    const info = { pro: {}, con: {} };
+    stages.forEach(st => {
+      const p = parseStage(st);
+      if (!p || !SIDE_KEY[p.side]) return;
+      const d = info[SIDE_KEY[p.side]][p.num] = info[SIDE_KEY[p.side]][p.num] || { roles: [], issue: '' };
+      const act = p.act.replace(/\s+/g, '');
+      if (!d.roles.includes(act)) d.roles.push(act);
+      if (!d.issue && /입론|반론/.test(act) && /^쟁점/.test(p.issue)) d.issue = p.issue;
+    });
+    return info;
+  }
+
+  function buildSlots() {
+    const info = slotInfo();
+    ['pro', 'con'].forEach(side => {
+      const box = document.getElementById(side + 'Slots');
+      box.textContent = '';
+      Object.keys(info[side]).map(Number).sort((a, b) => a - b).forEach(num => {
+        const d = info[side][num];
+        const slot = document.createElement('div');
+        slot.className = 'slot';
+        slot.dataset.key = `${side}-${num}`;
+        const main = document.createElement('div'); main.className = 'slot-main';
+        const title = document.createElement('div'); title.className = 'slot-title';
+        title.textContent = `${num}토론자`;
+        if (d.issue) { const is = document.createElement('span'); is.className = 'slot-issue'; is.textContent = d.issue; title.appendChild(is); }
+        const roles = document.createElement('div'); roles.className = 'slot-roles';
+        roles.textContent = d.roles.join(' · ');
+        const badge = document.createElement('div'); badge.className = 'slot-badge';
+        main.append(title, roles);
+        slot.append(main, badge);
+        box.appendChild(slot);
+      });
+    });
+  }
+
+  // 지금 단계에서 활성 표시할 슬롯과 표시 글자
+  // 입론·반론·최후변론: 발언자 / 교차조사: 질문자 + 상대편 전원 / 상호토론: 모두
+  function slotActivity(st) {
+    const on = {};
+    if (!st) return on;
+    const p = parseStage(st);
+    const all = side => [...document.querySelectorAll(`#${side}Slots .slot`)].map(el => el.dataset.key);
+    if (p && SIDE_KEY[p.side]) {
+      const side = SIDE_KEY[p.side], other = side === 'pro' ? 'con' : 'pro';
+      if (p.act.includes('교차')) {
+        on[`${side}-${p.num}`] = '질문';
+        all(other).forEach(k => { on[k] = '답변'; });
+      } else {
+        on[`${side}-${p.num}`] = '발언';
+      }
+    } else if (/^(상호토론|자유)/.test(String(st.name || '').trim())) {
+      [...all('pro'), ...all('con')].forEach(k => { on[k] = '토론'; });
+    }
+    return on;
+  }
+
+  function updateSlots() {
+    const on = currentStage >= 0 ? slotActivity(stages[currentStage]) : {};
+    document.querySelectorAll('.slot').forEach(el => {
+      const label = on[el.dataset.key];
+      el.classList.toggle('on', !!label);
+      el.querySelector('.slot-badge').textContent = label || '';
+    });
+  }
+
   // ========== 디스플레이 ==========
   function updateDisplay() {
     const timer = document.getElementById('timer');
@@ -1027,8 +1139,8 @@
         ? `진행 순서 ${s.no}번 · ${currentStage+1} / ${stages.length} 단계`
         : `${currentStage+1} / ${stages.length} 단계`;
       
-      const proName = document.getElementById('proName').value;
-      const conName = document.getElementById('conName').value;
+      const proName = document.getElementById('proName').value.trim() || '찬성팀';
+      const conName = document.getElementById('conName').value.trim() || '반대팀';
       
       if (s.side === 'pro') {
         speakerTag.textContent = `🔵 ${proName} 발언`;
@@ -1046,6 +1158,8 @@
       }
     }
     
+    updateSlots();
+
     timer.classList.remove('warning', 'danger');
     if (currentStage >= 0 && timeLeft > 0) {
       const plan = alertPlan(stages[currentStage]);
@@ -1108,26 +1222,36 @@
     }
   }
   
+  // 1초 뒤 숫자가 바뀌는 순간에 소리가 정확히 맞도록, 1초 앞에서 미리 예약
+  function scheduleNextSecond() {
+    if (currentStage < 0 || timeLeft <= 0) return;
+    const next = timeLeft - 1;
+    if (alertPlan(stages[currentStage]).beeps.includes(next)) playCue(WARNING_CUE, 1);
+    if (next === 0) playCue(END_CUE, 1);
+  }
+
   function startTimer() {
     isRunning = true;
+    scheduleNextSecond();
     interval = setInterval(() => {
       timeLeft--;
-      if (alertPlan(stages[currentStage]).beeps.includes(timeLeft)) playWarning();
       if (timeLeft <= 0) {
         timeLeft = 0;
-        stopTimer();
-        playBeep(880, 0.5);
-        playBeep(880, 0.5, 0.6);
+        stopTimer(true);   // 시간이 다 된 경우: 이미 울리기 시작한 종료음은 그대로 둠
         showMc();
+      } else {
+        scheduleNextSecond();
       }
       updateDisplay();
     }, 1000);
     updateDisplay();
   }
   
-  function stopTimer() {
+  // timeUp: 시간이 다 되어 멈춘 경우(true). 일시정지·단계 이동이면 예약해 둔 소리를 취소
+  function stopTimer(timeUp) {
     isRunning = false;
     if (interval) { clearInterval(interval); interval = null; }
+    if (timeUp !== true) cancelCues();
     updateDisplay();
   }
   
@@ -1326,47 +1450,82 @@
 
   // ========== 사운드 ==========
   let audioCtx = null;
+  let keepAlive = null;
 
-  // 소리 엔진은 사용자가 화면을 누르거나 키를 누르는 순간 미리 켜 둠.
-  // 첫 신호음 순간에 켜면 스피커(HDMI·블루투스 등)가 깨어나는 동안 짧은 소리가 묻히고,
-  // 사파리처럼 사용자 조작 없이 켠 소리를 막는 브라우저에서는 아예 소리가 나지 않음.
+  // 소리 엔진은 사용자가 화면을 누르거나 키를 누르는 순간 미리 켜 둠
+  // (사파리처럼 사용자 조작 없이 켠 소리를 막는 브라우저가 있음)
   function ensureAudio() {
     try {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === 'suspended') audioCtx.resume();
+      startKeepAlive();
     } catch (e) {}
   }
   ['pointerdown', 'keydown', 'touchend'].forEach(ev =>
     document.addEventListener(ev, ensureAudio, { capture: true, passive: true }));
 
-  // 소리 시계 기준으로 예약: delay초 뒤에 dur초 동안 일정한 크기로 울림
-  // (예전에는 시작하자마자 급격히 작아져서 실제로 들리는 시간이 0.05초 남짓이었음)
-  function playBeep(freq, dur, delay = 0, vol = 0.4) {
-    ensureAudio();
-    if (!audioCtx) return;
-    const play = () => {
-      try {
-        const t = audioCtx.currentTime + 0.03 + delay;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.value = freq;
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        gain.gain.setValueAtTime(0.0001, t);
-        gain.gain.linearRampToValueAtTime(vol, t + 0.015);
-        gain.gain.setValueAtTime(vol, t + Math.max(0.03, dur - 0.06));
-        gain.gain.linearRampToValueAtTime(0.0001, t + dur);
-        osc.start(t);
-        osc.stop(t + dur + 0.02);
-      } catch (e) {}
-    };
-    if (audioCtx.state === 'running') play();
-    else audioCtx.resume().then(play).catch(() => {});
+  // 크롬 계열 브라우저는 소리가 30초 동안 완전히 0(무음)이면 스피커 출력을 쉬게 했다가,
+  // 다음 소리가 나올 때 다시 켜면서 그 소리를 늦게 내보냄 → 신호음이 1초쯤 늦게 들림.
+  // 사람 귀에는 들리지 않는 아주 작은 신호(-74dB, 50Hz)를 계속 흘려서 출력이 쉬지 않게 함.
+  function startKeepAlive() {
+    if (keepAlive || !audioCtx) return;
+    const osc = audioCtx.createOscillator(), g = audioCtx.createGain();
+    osc.frequency.value = 50;
+    g.gain.value = 0.0002;
+    osc.connect(g);
+    g.connect(audioCtx.destination);
+    osc.start();
+    keepAlive = osc;
   }
 
-  // 남은 시간 경고음: 또렷하게 들리도록 높이·길이를 키움 (예전 440Hz 0.15초)
-  function playWarning() { playBeep(660, 0.35); }
+  // 효과음: 부드럽게 울리고 사라지는 종소리(맑은 기본음 + 옅은 배음), 음이 위로 올라가 밝게 들림
+  const WARNING_CUE = { notes: [[783.99, 0], [1046.5, 0.16]], vol: 0.32, decay: 1.1 };                   // 솔→도 '딩-동'
+  const END_CUE = { notes: [[523.25, 0], [659.25, 0.17], [783.99, 0.34], [1046.5, 0.51]], vol: 0.3, decay: 1.5 }; // 도미솔도
+
+  let pendingCues = [];   // 예약해 둔 소리 (일시정지·단계 이동 시 아직 안 울린 것만 취소)
+
+  function chimeNote(freq, at, vol, decay) {
+    const env = audioCtx.createGain();
+    env.connect(audioCtx.destination);
+    env.gain.setValueAtTime(0.0001, at);
+    env.gain.linearRampToValueAtTime(vol, at + 0.012);
+    env.gain.exponentialRampToValueAtTime(0.0001, at + decay);
+    [[1, 1], [2, 0.16], [3, 0.04]].forEach(([mult, amp]) => {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = 'sine';
+      o.frequency.value = freq * mult;
+      g.gain.value = amp;
+      o.connect(g);
+      g.connect(env);
+      o.start(at);
+      o.stop(at + decay + 0.05);
+    });
+    pendingCues.push({ env, at });
+  }
+
+  // inSec초 뒤(스피커 출력 지연만큼 당겨서)에 효과음을 울림
+  function playCue(cue, inSec = 0) {
+    ensureAudio();
+    if (!audioCtx) return;
+    const go = () => {
+      try {
+        const lag = (audioCtx.outputLatency || 0) + (audioCtx.baseLatency || 0);
+        const at = audioCtx.currentTime + Math.max(0.02, inSec - lag);
+        pendingCues = pendingCues.filter(c => c.at > audioCtx.currentTime - 3);
+        cue.notes.forEach(([f, dt]) => chimeNote(f, at + dt, cue.vol, cue.decay));
+      } catch (e) {}
+    };
+    if (audioCtx.state === 'running') go();
+    else audioCtx.resume().then(go).catch(() => {});
+  }
+
+  function cancelCues() {
+    if (!audioCtx) { pendingCues = []; return; }
+    const now = audioCtx.currentTime;
+    // 아직 울리지 않은 소리는 스피커 연결을 끊어 확실히 막음
+    pendingCues.forEach(c => { if (c.at > now) { try { c.env.disconnect(); } catch (e) {} } });
+    pendingCues = pendingCues.filter(c => c.at <= now);
+  }
   
   // ========== 설정 모달 ==========
   function openSettings() {
@@ -1610,6 +1769,9 @@
     else if (e.code === 'KeyF' && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); toggleFullscreen(); }
   });
   
+  // 팀 이름을 고치면 '○○팀 발언' 표시도 바로 반영
+  ['proName', 'conName'].forEach(id => document.getElementById(id).addEventListener('input', () => updateDisplay()));
+
   // 논제를 고치면 시작 전 멘트도 바로 바뀜
   document.getElementById('topicInput').addEventListener('input', () => {
     fitTopic();
