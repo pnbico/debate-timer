@@ -1193,11 +1193,12 @@
   }
 
   // ========== 단계 제어 ==========
+  // 단계를 불러와 대기 화면으로 둠 (시간은 흐르지 않음, 그 차례 안내 멘트 표시)
   function startStage(idx) {
     stopTimer();
-    hideMc();
     currentStage = idx;
     timeLeft = stages[idx].sec;
+    showStandby();
     updateDisplay();
   }
   
@@ -1212,11 +1213,8 @@
     } else if (isRunning) {
       stopTimer();
     } else if (timeLeft <= 0) {
-      // 시간이 끝난 단계: 다음 단계로 넘어가 바로 시작 (사회자 멘트 후 한 번에 진행)
-      if (currentStage < stages.length - 1) {
-        startStage(currentStage + 1);
-        startTimer();
-      }
+      // 시간이 끝난 단계: 다음 차례 대기 화면으로 넘어감 (한 번 더 눌러야 시작)
+      if (currentStage < stages.length - 1) startStage(currentStage + 1);
     } else {
       startTimer();
     }
@@ -1231,6 +1229,7 @@
   }
 
   function startTimer() {
+    hideMc();
     isRunning = true;
     scheduleNextSecond();
     interval = setInterval(() => {
@@ -1238,7 +1237,7 @@
       if (timeLeft <= 0) {
         timeLeft = 0;
         stopTimer(true);   // 시간이 다 된 경우: 이미 울리기 시작한 종료음은 그대로 둠
-        showMc();
+        showTimeUp();
       } else {
         scheduleNextSecond();
       }
@@ -1315,10 +1314,10 @@
     return !!(st && st.no && String(st.no).includes('-'));
   }
 
-  // idx번째 단계를 안내하는 사회자 멘트 → { text, quiet }
+  // idx번째 차례의 대기 화면에 띄울 안내 멘트 → { text, quiet }
   // (idx가 범위를 넘으면 마무리 멘트, quiet이면 멘트 없이 진행한다는 안내)
   function mcScript(idx) {
-    if (idx >= stages.length) return { text: '시간이 다 되었습니다. 이상으로 모든 토론 순서를 마치겠습니다. 수고 많으셨습니다.' };
+    if (idx >= stages.length) return { text: '이상으로 모든 토론 순서를 마치겠습니다. 수고 많으셨습니다.' };
     const s = stages[idx], prev = stages[idx - 1];
     const t = fmtKor(s.sec);
     const plain = String(s.name || '').trim().replace(/\s*\([^)]*\)\s*$/, '');
@@ -1347,7 +1346,7 @@
     } else {
       next = `다음은 ${plain} 순서입니다. ${t} 동안 진행하겠습니다.`;
     }
-    return { text: '시간이 다 되었습니다. ' + next };
+    return { text: next };
   }
 
   // 토론 시작 전 멘트 (논제 칸 내용과 동기화)
@@ -1381,9 +1380,16 @@
     el.classList.add('show');
   }
 
-  // 단계 시간이 끝났을 때: 다음 단계 안내
-  function showMc() {
-    const r = mcScript(currentStage + 1);
+  // 0:00이 되었을 때: '시간이 다 되었습니다.'만 (마지막 순서면 마무리 인사까지)
+  function showTimeUp() {
+    const last = currentStage >= stages.length - 1;
+    setMc('시간이 다 되었습니다.' + (last ? ' ' + mcScript(stages.length).text : ''));
+  }
+
+  // 다음 차례 대기 화면: 그 차례 안내 멘트 (스페이스·계속을 누르면 시작)
+  function showStandby() {
+    if (currentStage < 0) return;
+    const r = mcScript(currentStage);
     setMc(r.text, r.quiet);
   }
 
