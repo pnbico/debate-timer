@@ -1043,8 +1043,9 @@
     
     timer.classList.remove('warning', 'danger');
     if (currentStage >= 0 && timeLeft > 0) {
-      if (timeLeft <= 10) timer.classList.add('danger');
-      else if (timeLeft <= 30) timer.classList.add('warning');
+      const plan = alertPlan(stages[currentStage]);
+      if (timeLeft <= plan.red) timer.classList.add('danger');
+      else if (timeLeft <= plan.yellow) timer.classList.add('warning');
     }
     
     const playBtn = document.getElementById('playBtn');
@@ -1063,6 +1064,15 @@
     updateProgress();
   }
   
+  // ========== 남은 시간 알림 ==========
+  // 입론·반론(50초 발언): 10초 남으면 노란색+신호음, 5초 남으면 빨간색(신호음 없음)
+  // 그 밖의 단계: 30초 남으면 노란색+신호음, 10초 남으면 빨간색+신호음
+  function alertPlan(stage) {
+    const name = String((stage && stage.name) || '');
+    if (/입론|반론/.test(name)) return { yellow: 10, red: 5, beeps: [10] };
+    return { yellow: 30, red: 10, beeps: [30, 10] };
+  }
+
   // ========== 단계 제어 ==========
   function startStage(idx) {
     stopTimer();
@@ -1097,7 +1107,7 @@
     isRunning = true;
     interval = setInterval(() => {
       timeLeft--;
-      if (timeLeft === 30 || timeLeft === 10) playBeep(440, 0.15);
+      if (alertPlan(stages[currentStage]).beeps.includes(timeLeft)) playBeep(440, 0.15);
       if (timeLeft <= 0) {
         timeLeft = 0;
         stopTimer();
