@@ -1200,8 +1200,9 @@
     const plain = String(s.name || '').trim().replace(/\s*\([^)]*\)\s*$/, '');
     const cur = parseStage(s), before = parseStage(prev);
 
-    // 입론끼리, 반론끼리 이어지는 토론자 사이: 멘트 없이 차례대로 진행
-    if (isSplit(s) && isSplit(prev) && cur && before && cur.act === before.act) {
+    // 같은 측 안에서 입론끼리, 반론끼리 이어지는 토론자 사이: 멘트 없이 차례대로 진행
+    // (찬성 → 반대처럼 측이 바뀌면 아래에서 그 측 입론·반론 전체를 안내)
+    if (isSplit(s) && isSplit(prev) && cur && before && cur.act === before.act && cur.side === before.side) {
       return { text: QUIET_MC, quiet: true };
     }
 
