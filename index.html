@@ -1190,16 +1190,17 @@
   }
   
   // ========== 남은 시간 알림 ==========
-  // 입론·반론: 10초 노란색+예비음, 5초 빨간색(소리 없음)
-  // 교차조사·상호토론·최후변론: 20초 노란색+예비음, 10초 빨간색+예비음
-  // 숙의: 30초 노란색, 10초 빨간색 (예비음 없음)
-  // 그 밖의 단계: 30초 노란색+예비음, 10초 빨간색+예비음
+  // 예비음은 노란색으로 바뀔 때 한 번만, 빨간색으로 바뀔 때는 소리 없음
+  // 입론·반론: 10초 노란색+예비음, 5초 빨간색
+  // 교차조사·상호토론·최후변론: 20초 노란색+예비음, 10초 빨간색
+  // 숙의: 20초 노란색, 10초 빨간색 (예비음 없음)
+  // 그 밖의 단계: 30초 노란색+예비음, 10초 빨간색
   function alertPlan(stage) {
     const name = String((stage && stage.name) || '');
     if (/입론|반론/.test(name)) return { yellow: 10, red: 5, beeps: [10] };
-    if (/숙의/.test(name)) return { yellow: 30, red: 10, beeps: [] };
-    if (/교차|상호토론|자유|최후|최종/.test(name)) return { yellow: 20, red: 10, beeps: [20, 10] };
-    return { yellow: 30, red: 10, beeps: [30, 10] };
+    if (/숙의/.test(name)) return { yellow: 20, red: 10, beeps: [] };
+    if (/교차|상호토론|자유|최후|최종/.test(name)) return { yellow: 20, red: 10, beeps: [20] };
+    return { yellow: 30, red: 10, beeps: [30] };
   }
 
   // ========== 단계 제어 ==========
