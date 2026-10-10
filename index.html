@@ -1069,6 +1069,7 @@
         const slot = document.createElement('div');
         slot.className = 'slot';
         slot.dataset.key = `${side}-${num}`;
+        slot.dataset.issue = (d.issue.match(/\d+/) || [''])[0];   // 맡은 쟁점 번호 (예: '1')
         const main = document.createElement('div'); main.className = 'slot-main';
         const title = document.createElement('div'); title.className = 'slot-title';
         title.textContent = `${num}토론자`;
@@ -1094,7 +1095,12 @@
       const side = SIDE_KEY[p.side], other = side === 'pro' ? 'con' : 'pro';
       if (p.act.includes('교차')) {
         on[`${side}-${p.num}`] = '질문';
-        all(other).forEach(k => { on[k] = '답변'; });
+        // 교차조사에 쟁점이 정해져 있으면(예: 4대4 '쟁점1·2') 그 쟁점을 맡은 상대만 답변,
+        // 쟁점 표시가 없으면 상대편 전원이 답변
+        const issues = (p.issue.match(/\d+/g) || []);
+        const slotsOther = [...document.querySelectorAll(`#${other}Slots .slot`)];
+        const matched = slotsOther.filter(el => issues.includes(el.dataset.issue));
+        (issues.length && matched.length ? matched : slotsOther).forEach(el => { on[el.dataset.key] = '답변'; });
       } else {
         on[`${side}-${p.num}`] = '발언';
       }
