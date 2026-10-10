@@ -1054,9 +1054,9 @@
       startStage(currentStage - 1);
     } else if (currentStage === 0) {
       stopTimer();
-      hideMc();
       currentStage = -1;
       timeLeft = 0;
+      showOpening();
       updateDisplay();
     }
   }
@@ -1072,7 +1072,7 @@
     stopTimer();
     currentStage = -1;
     timeLeft = 0;
-    hideMc();
+    showOpening();
     updateDisplay();
   }
   
@@ -1110,15 +1110,38 @@
     return '시간이 다 되었습니다. ' + next;
   }
 
-  function showMc() {
+  // 토론 시작 전 멘트 (논제 칸 내용과 동기화)
+  const TOPIC_PLACEHOLDER = '논제를 입력하세요 (클릭하여 수정)';
+  function openingScript() {
+    const raw = document.getElementById('topicInput').value.trim();
+    // 논제를 아직 안 적었으면 논제 부분을 빼고, 앞뒤에 따옴표를 직접 적었으면 겹치지 않게 정리
+    const topic = (raw && raw !== TOPIC_PLACEHOLDER) ? raw.replace(/^['"‘’“”]+|['"‘’“”]+$/g, '').trim() : '';
+    const head = topic
+      ? `지금부터 '${topic}'에 대한 토론을 시작하겠습니다.`
+      : '지금부터 토론을 시작하겠습니다.';
+    return head + ' 찬성 측부터 입론을 시작해주세요.';
+  }
+
+  function setMc(text) {
     const el = document.getElementById('mcLine');
     el.textContent = '';
     const tag = document.createElement('span');
     tag.className = 'mc-tag';
     tag.textContent = '사회자';
     el.appendChild(tag);
-    el.appendChild(document.createTextNode(mcScript(currentStage + 1)));
+    el.appendChild(document.createTextNode(text));
     el.classList.add('show');
+  }
+
+  // 단계 시간이 끝났을 때: 다음 단계 안내
+  function showMc() {
+    setMc(mcScript(currentStage + 1));
+  }
+
+  // 시작 전(대기 상태)일 때: 토론 시작 멘트
+  function showOpening() {
+    if (stages.length === 0) { hideMc(); return; }
+    setMc(openingScript());
   }
 
   function hideMc() {
@@ -1130,11 +1153,11 @@
   // ========== 3대3 / 4대4 빠른 전환 ==========
   function applyPreset(key) {
     stopTimer();
-    hideMc();
     stages = JSON.parse(JSON.stringify(presets[key].stages));
     activePresetKey = key;
     currentStage = -1;
     timeLeft = 0;
+    showOpening();
     buildProgress();
     updateDisplay();
     updateFormatToggle();
@@ -1310,7 +1333,7 @@
     
     currentStage = -1;
     timeLeft = 0;
-    hideMc();
+    showOpening();
     
     buildProgress();
     updateDisplay();
@@ -1354,10 +1377,16 @@
     else if (e.code === 'KeyF' && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); toggleFullscreen(); }
   });
   
+  // 논제를 고치면 시작 전 멘트도 바로 바뀜
+  document.getElementById('topicInput').addEventListener('input', () => {
+    if (currentStage < 0) showOpening();
+  });
+
   // ========== 초기화 ==========
   buildProgress();
   updateDisplay();
   updateFormatToggle();
+  showOpening();
 </script>
 
 </body></html>
