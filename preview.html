@@ -412,23 +412,20 @@
   }
   @media (max-width: 1100px) { .keys { display: none; } }
 
-  /* 저작자 정보 (가운데 판 아래 귀퉁이) */
+  /* 제작자 정보 (조작 줄 오른쪽 빈칸) */
   .credit {
-    position: absolute;
-    left: 1.5vw;
-    right: 1.5vw;
-    bottom: 1vh;
-    text-align: center;
+    grid-column: 3;
+    justify-self: end;
+    text-align: right;
     font-size: max(1.3vh, 10px);
-    line-height: 1.45;
+    line-height: 1.4;
     color: rgba(255,255,255,0.5);
-    word-break: keep-all;
+    white-space: nowrap;
   }
-  .credit a { color: rgba(255,255,255,0.72); text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 2px; }
+  .credit .credit-title { color: rgba(255,255,255,0.78); font-weight: 700; }
+  .credit .credit-role { color: rgba(255,255,255,0.38); margin-right: 0.3em; }
+  .credit a { color: inherit; text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 2px; }
   .credit a:hover { color: #fff; }
-  @media (max-width: 1100px) { .center .credit { display: none; } }
-  .modal-credit { margin-top: 2.5vh; font-size: max(1.4vh, 11px); line-height: 1.55; color: rgba(255,255,255,0.55); word-break: keep-all; }
-  .modal-credit a { color: rgba(255,255,255,0.8); text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 2px; }
   
   .progress {
     display: flex;
@@ -875,9 +872,6 @@
       <div class="timer" id="timer">00:00</div>
       <div class="speaker-tag both" id="speakerTag">준비</div>
       <div class="mc-line" id="mcLine" aria-live="polite"></div>
-      <div class="credit">
-        <a href="https://blog.naver.com/gappaywam" target="_blank" rel="noopener" title="https://blog.naver.com/gappaywam">세명고 이동진 선생님</a>이 개발한 CEDA 토론 진행 도구를 평촌고 수행평가를 위해 수정 배포함
-      </div>
     </div>
     
     <!-- 반대팀 -->
@@ -903,7 +897,11 @@
         <button class="ctrl-btn" onclick="nextStage()">다음 ▶</button>
         <button class="ctrl-btn danger" onclick="resetAll()">초기화</button>
       </div>
-      <div></div>
+      <div class="credit" aria-label="제작 정보">
+        <div class="credit-title">CEDA 토론 진행 도구</div>
+        <div><span class="credit-role">원작 ·</span><a href="https://blog.naver.com/gappaywam" target="_blank" rel="noopener" title="https://blog.naver.com/gappaywam">세명고 이동진 교사</a></div>
+        <div><span class="credit-role">수정 ·</span>평촌고 「화법과 언어」 수업용</div>
+      </div>
     </div>
   </div>
 </div>
@@ -923,7 +921,6 @@
           <h3>📋 프리셋 불러오기</h3>
           <div class="preset-grid" id="presetGrid"></div>
         </div>
-        <p class="modal-credit"><a href="https://blog.naver.com/gappaywam" target="_blank" rel="noopener">세명고 이동진 선생님</a>(blog.naver.com/gappaywam)이 개발한 CEDA 토론 진행 도구를 평촌고 수행평가를 위해 수정 배포함</p>
       </div>
       
       <!-- 우측: 단계 편집 -->
