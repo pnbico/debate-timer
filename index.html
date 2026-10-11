@@ -572,6 +572,30 @@
     z-index: 200;
     box-shadow: 0 4px 20px rgba(0,0,0,0.4);
   }
+  .app-toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(3vh + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%) translateY(1vh);
+    max-width: 90vw;
+    padding: 1.1vh 1.6vw;
+    border-radius: 1vh;
+    background: #1f2937;
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    font-size: max(1.8vh, 13px);
+    font-weight: 700;
+    box-shadow: 0 1vh 3vh rgba(0,0,0,0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s, transform 0.25s;
+    z-index: 300;
+    text-align: center;
+    word-break: keep-all;
+  }
+  .app-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .app-toast.ok { border-color: #22c55e; }
+  .app-toast.warn { border-color: #f59e0b; }
   .preset-toast.show {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
@@ -721,7 +745,7 @@
       <button class="format-btn" data-preset="perf44" onclick="switchFormat('perf44')" title="수행평가 4대4 토론으로 바꾸기">4대4</button>
     </div>
     <button class="settings-btn fs-btn" id="fsBtn" onclick="toggleFullscreen()" title="전체화면 (F)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span id="fsLabel" class="btn-label">전체화면</span></button>
-    <button class="settings-btn" onclick="downloadHTML()" title="HTML 파일로 저장" style="background:rgba(34,197,94,0.2);border-color:rgba(34,197,94,0.4);color:#86efac">⬇<span class="btn-label"> 다운로드</span></button>
+    <button class="settings-btn" id="fileBtn" onclick="fileButton()" title="지금 설정(프리셋·논제·팀 이름)을 담은 파일로 내려받기 — 인터넷 없이도 열 수 있음" style="background:rgba(34,197,94,0.2);border-color:rgba(34,197,94,0.4);color:#86efac"><span id="fileBtnIcon">⬇</span><span class="btn-label" id="fileBtnLabel"> 내려받기</span></button>
     <button class="settings-btn" onclick="openSettings()" title="설정">⚙<span class="btn-label"> 설정</span></button>
   </div>
   
@@ -806,7 +830,15 @@
   </div>
 </div>
 
+<div class="app-toast" id="appToast" role="status" aria-live="polite"></div>
+
+<!-- 내려받은 파일에 저장된 설정 (프리셋·논제·팀 이름). 온라인 사이트에서는 비어 있음 -->
+<script type="application/json" id="saved-settings">null</script>
+
 <script>
+  // 이 페이지의 원본 HTML (화면이 바뀌기 전 상태) — 설정을 담은 파일을 만들 때 바탕으로 씀
+  const PAGE_SOURCE = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+
   // ========== 프리셋 ==========
   const presets = {
     ceda: {
@@ -962,8 +994,20 @@
     },
   };
   
+  // ========== 파일에 저장된 설정 ==========
+  // 내려받은 파일이면 그 안에 저장해 둔 프리셋으로 바꿔 씀
+  let SAVED = null;
+  try { SAVED = JSON.parse(document.getElementById('saved-settings').textContent || 'null'); } catch (e) { SAVED = null; }
+  if (SAVED && SAVED.presets) {
+    Object.entries(SAVED.presets).forEach(([key, p]) => {
+      if (p && typeof p.name === 'string' && Array.isArray(p.stages)) presets[key] = p;
+    });
+  }
+  const IS_LOCAL_FILE = location.protocol === 'file:';   // 내려받은 파일을 직접 연 경우
+
   // ========== 상태 ==========
-  const DEFAULT_PRESET = 'perf33';   // 첫 화면 기본 타임테이블: 수행평가 3대3 토론
+  // 첫 화면 기본 타임테이블: 수행평가 3대3 토론 (파일에 저장된 마지막 프리셋이 있으면 그것)
+  const DEFAULT_PRESET = (SAVED && presets[SAVED.active]) ? SAVED.active : 'perf33';
   let stages = JSON.parse(JSON.stringify(presets[DEFAULT_PRESET].stages));
   let editingStages = []; // 모달 내 편집용
   
@@ -1424,6 +1468,7 @@
     currentStage = -1;
     timeLeft = 0;
     showOpening();
+    markUnsaved();
     buildProgress();
     updateDisplay();
     updateFormatToggle();
@@ -1658,6 +1703,8 @@
     }
     
     stages = JSON.parse(JSON.stringify(editingStages));
+    // 고친 내용을 그 프리셋 자체에 반영 (3대3/4대4 버튼, 내려받기·파일 저장에도 쓰임)
+    if (presets[activePresetKey]) presets[activePresetKey].stages = JSON.parse(JSON.stringify(editingStages));
     
     currentStage = -1;
     timeLeft = 0;
@@ -1667,34 +1714,112 @@
     updateDisplay();
     updateFormatToggle();
     closeSettings();
+    if (IS_LOCAL_FILE) saveToFile();
   }
   
-  // ========== HTML 다운로드 ==========
-  function downloadHTML() {
-    // 현재 입력값들을 HTML에 반영 (다운로드한 파일이 현재 상태로 열리도록)
-    const topicEl = document.getElementById('topicInput');
-    const proEl = document.getElementById('proName');
-    const conEl = document.getElementById('conName');
-    topicEl.setAttribute('value', topicEl.value);
-    proEl.setAttribute('value', proEl.value);
-    conEl.setAttribute('value', conEl.value);
-    
-    const html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+  // ========== 내려받기 / 파일에 저장 ==========
+  function toast(msg, kind) {
+    const el = document.getElementById('appToast');
+    el.textContent = msg;
+    el.className = 'app-toast show' + (kind ? ' ' + kind : '');
+    clearTimeout(toast.t);
+    toast.t = setTimeout(() => el.classList.remove('show'), 3200);
+  }
+
+  // 지금 설정(프리셋·마지막 프리셋·논제·팀 이름)을 담은 HTML 문서를 만듦
+  function buildSavedHtml() {
+    const data = {
+      v: 1,
+      savedAt: new Date().toISOString(),
+      active: activePresetKey,
+      presets: JSON.parse(JSON.stringify(presets)),
+      topic: document.getElementById('topicInput').value,
+      proName: document.getElementById('proName').value,
+      conName: document.getElementById('conName').value,
+    };
+    const json = JSON.stringify(data).replace(/</g, '\\u003c');   // 스크립트 안에서 안전하게
+    return PAGE_SOURCE.replace(
+      /(<script type="application\/json" id="saved-settings">)[\s\S]*?(<\/script>)/,
+      (m, open, close) => open + json + close
+    );
+  }
+
+  function currentFileName() {
+    if (IS_LOCAL_FILE) {
+      const last = decodeURIComponent(location.pathname.split('/').pop() || '');
+      if (/\.html?$/i.test(last)) return last;
+    }
+    return '토론진행도우미.html';
+  }
+
+  function downloadFile(html, name) {
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    
-    const today = new Date();
-    const dateStr = `${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}`;
-    a.download = `CEDA_토론_진행도구_${dateStr}.html`;
-    
+    a.download = name;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
-  
+
+  // 내려받은 파일에서: 그 파일 자체에 덮어써서 저장 (크롬·엣지 계열)
+  // 지원하지 않는 브라우저(사파리 등)는 새 파일로 내려받음
+  let fileHandle = null;
+  async function saveToFile() {
+    const html = buildSavedHtml();
+    if (window.showSaveFilePicker) {
+      try {
+        if (!fileHandle) {
+          fileHandle = await window.showSaveFilePicker({
+            suggestedName: currentFileName(),
+            types: [{ description: 'HTML 파일', accept: { 'text/html': ['.html'] } }],
+          });
+        } else if (fileHandle.queryPermission && (await fileHandle.queryPermission({ mode: 'readwrite' })) !== 'granted') {
+          if ((await fileHandle.requestPermission({ mode: 'readwrite' })) !== 'granted') throw Object.assign(new Error('denied'), { name: 'NotAllowedError' });
+        }
+        const w = await fileHandle.createWritable();
+        await w.write(html);
+        await w.close();
+        markSaved();
+        toast(`✓ '${fileHandle.name}' 파일에 저장했어요`, 'ok');
+        return;
+      } catch (e) {
+        if (e && e.name === 'AbortError') { toast('저장을 취소했어요. 바꾼 설정은 이 화면에만 적용돼 있어요.', 'warn'); return; }
+        fileHandle = null;   // 권한 거부 등: 아래 내려받기로
+      }
+    }
+    downloadFile(html, currentFileName());
+    markSaved();
+    toast('이 브라우저는 파일에 바로 저장할 수 없어서 새 파일로 내려받았어요. 앞으로는 새로 받은 파일을 여세요.', 'warn');
+  }
+
+  // 위쪽 버튼: 온라인 사이트에서는 '내려받기', 내려받은 파일에서는 '저장'
+  function fileButton() {
+    if (IS_LOCAL_FILE) { saveToFile(); return; }
+    downloadFile(buildSavedHtml(), '토론진행도우미.html');
+    toast('지금 설정을 담은 파일을 내려받았어요. 그 파일을 열면 인터넷 없이 쓸 수 있고, 고친 설정이 파일 안에 저장돼요.', 'ok');
+  }
+
+  // 내려받은 파일에서 저장하지 않은 변경이 있으면 버튼에 점 표시
+  let unsaved = false;
+  function markUnsaved() {
+    if (!IS_LOCAL_FILE || unsaved) return;
+    unsaved = true;
+    document.getElementById('fileBtnLabel').textContent = ' 저장 •';
+  }
+  function markSaved() {
+    unsaved = false;
+    if (IS_LOCAL_FILE) document.getElementById('fileBtnLabel').textContent = ' 저장';
+  }
+  if (IS_LOCAL_FILE) {
+    document.getElementById('fileBtnIcon').textContent = '💾';
+    document.getElementById('fileBtnLabel').textContent = ' 저장';
+    document.getElementById('fileBtn').title = '지금 설정(프리셋·논제·팀 이름)을 이 파일에 저장';
+    window.addEventListener('beforeunload', e => { if (unsaved) { e.preventDefault(); e.returnValue = ''; } });
+  }
+
   // ========== 논제 고르기 ==========
   const TOPICS = [
     '돈으로 행복을 살 수 있다',
@@ -1748,6 +1873,7 @@
       if (document.activeElement) document.activeElement.blur();   // Space로 바로 시작할 수 있게
     }
     if (currentStage < 0) showOpening();
+    markUnsaved();
   }
 
   // 논제가 길어 칸을 넘치면 글자 크기를 줄여 한 줄에 다 보이게 (최대 60%까지)
@@ -1790,15 +1916,21 @@
   });
   
   // 팀 이름을 고치면 '○○팀 발언' 표시도 바로 반영
-  ['proName', 'conName'].forEach(id => document.getElementById(id).addEventListener('input', () => updateDisplay()));
+  ['proName', 'conName'].forEach(id => document.getElementById(id).addEventListener('input', () => { updateDisplay(); markUnsaved(); }));
 
   // 논제를 고치면 시작 전 멘트도 바로 바뀜
   document.getElementById('topicInput').addEventListener('input', () => {
     fitTopic();
     if (currentStage < 0) showOpening();
+    markUnsaved();
   });
 
   // ========== 초기화 ==========
+  if (SAVED) {
+    if (typeof SAVED.topic === 'string') document.getElementById('topicInput').value = SAVED.topic;
+    if (typeof SAVED.proName === 'string') document.getElementById('proName').value = SAVED.proName;
+    if (typeof SAVED.conName === 'string') document.getElementById('conName').value = SAVED.conName;
+  }
   buildProgress();
   updateDisplay();
   updateFormatToggle();
