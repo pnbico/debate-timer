@@ -729,6 +729,69 @@
   .modal-btn.primary:hover { background: #16a34a; }
   .modal-btn.secondary { background: rgba(255,255,255,0.1); color: #fff; }
   .modal-btn.secondary:hover { background: rgba(255,255,255,0.2); }
+  .modal-btn.download { background: rgba(34,197,94,0.18); color: #86efac; border: 1px solid rgba(34,197,94,0.45); }
+  .modal-btn.download:hover { background: rgba(34,197,94,0.3); }
+  .modal-btn.reset { background: transparent; color: #fca5a5; border: 1px solid rgba(239,68,68,0.5); }
+  .modal-btn.reset:hover { background: rgba(239,68,68,0.15); }
+  .modal-btn:focus-visible { outline: 2px solid #fbbf24; outline-offset: 2px; }
+  .footer-left, .footer-right { display: flex; align-items: center; gap: 0.8vw; }
+
+  /* 버튼에 커서를 대면 뜨는 안내 */
+  .has-tip { position: relative; }
+  .has-tip::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: calc(100% + 1.2vh);
+    right: 0;
+    width: max-content;
+    max-width: max(26vw, 240px);
+    padding: 0.9vh 1vw;
+    border-radius: 0.8vh;
+    background: #0b1020;
+    border: 1px solid rgba(255,255,255,0.22);
+    box-shadow: 0 1vh 2.5vh rgba(0,0,0,0.5);
+    color: #fff;
+    font-size: max(1.55vh, 12px);
+    font-weight: 500;
+    line-height: 1.5;
+    text-align: left;
+    white-space: normal;
+    word-break: keep-all;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s;
+    z-index: 10;
+  }
+  .has-tip.tip-left::after { right: auto; left: 0; }
+  .has-tip:hover::after, .has-tip:focus-visible::after { opacity: 1; }
+
+  /* 초기화 확인 창 */
+  .confirm-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 150;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .confirm-overlay[hidden] { display: none; }
+  .confirm-box {
+    width: min(90vw, 460px);
+    background: #141a2e;
+    border: 1px solid rgba(239,68,68,0.5);
+    border-radius: 1.4vh;
+    padding: 3vh 2vw 2.4vh;
+    display: flex;
+    flex-direction: column;
+    gap: 2.4vh;
+    box-shadow: 0 2vh 5vh rgba(0,0,0,0.6);
+  }
+  .confirm-msg { display: flex; align-items: center; gap: 0.8em; color: #fff; font-size: max(2.2vh, 15px); font-weight: 700; word-break: keep-all; }
+  .confirm-msg .warn-icon { flex-shrink: 0; width: 1.8em; height: 1.8em; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: rgba(239,68,68,0.2); color: #f87171; font-weight: 900; }
+  .confirm-actions { display: flex; justify-content: flex-end; gap: 0.8vw; }
+  .modal-btn.danger-solid { background: #dc2626; color: #fff; }
+  .modal-btn.danger-solid:hover { background: #b91c1c; }
 </style>
 </head>
 <body id="artifacts-component-root-html">
@@ -745,7 +808,7 @@
       <button class="format-btn" data-preset="perf44" onclick="switchFormat('perf44')" title="수행평가 4대4 토론으로 바꾸기">4대4</button>
     </div>
     <button class="settings-btn fs-btn" id="fsBtn" onclick="toggleFullscreen()" title="전체화면 (F)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span id="fsLabel" class="btn-label">전체화면</span></button>
-    <button class="settings-btn" id="fileBtn" onclick="fileButton()" title="지금 설정(프리셋·논제·팀 이름)을 담은 파일로 내려받기 — 인터넷 없이도 열 수 있음" style="background:rgba(34,197,94,0.2);border-color:rgba(34,197,94,0.4);color:#86efac"><span id="fileBtnIcon">⬇</span><span class="btn-label" id="fileBtnLabel"> 내려받기</span></button>
+    <button class="settings-btn" id="fileBtn" onclick="fileButton()" title="설정이 반영된 파일을 로컬에 저장하여 이용합니다." style="background:rgba(34,197,94,0.2);border-color:rgba(34,197,94,0.4);color:#86efac"><span id="fileBtnIcon">⬇</span><span class="btn-label" id="fileBtnLabel"> 내려받기</span></button>
     <button class="settings-btn" onclick="openSettings()" title="설정">⚙<span class="btn-label"> 설정</span></button>
   </div>
   
@@ -821,16 +884,34 @@
       </div>
     </div>
     <div class="modal-footer">
-      <div class="total-time" id="totalTime"></div>
-      <div style="display:flex;gap:0.8vw">
-        <button class="modal-btn secondary" onclick="closeSettings()">취소</button>
-        <button class="modal-btn primary" onclick="saveSettings()">✓ 저장하고 적용</button>
+      <div class="footer-left">
+        <div class="total-time" id="totalTime"></div>
+        <button class="modal-btn reset has-tip tip-left" id="resetSettingsBtn" type="button" onclick="openResetConfirm()"
+          data-tip="프리셋, 논제, 팀 이름 등 지금까지 바꾼 설정을 모두 처음 상태로 되돌립니다.">초기화</button>
+      </div>
+      <div class="footer-right">
+        <button class="modal-btn secondary" type="button" onclick="closeSettings()">취소</button>
+        <button class="modal-btn download has-tip" id="settingsDownloadBtn" type="button" onclick="downloadFromSettings()"
+          data-tip="설정이 반영된 파일을 로컬에 저장하여 이용합니다.">⬇ 내려받기</button>
+        <button class="modal-btn primary has-tip" id="settingsApplyBtn" type="button" onclick="applySettings()"
+          data-tip="수정한 값은 새로고침(F5) 후 초기화됩니다. 필요한 경우 로컬에 내려받으세요.">✓ 적용</button>
       </div>
     </div>
   </div>
 </div>
 
 <div class="app-toast" id="appToast" role="status" aria-live="polite"></div>
+
+<!-- 설정 초기화 확인 -->
+<div class="confirm-overlay" id="resetConfirm" hidden>
+  <div class="confirm-box" role="alertdialog" aria-modal="true" aria-labelledby="resetConfirmMsg">
+    <div class="confirm-msg" id="resetConfirmMsg"><span class="warn-icon" aria-hidden="true">!</span>가장 처음의 설정으로 돌아갑니다.</div>
+    <div class="confirm-actions">
+      <button class="modal-btn secondary" id="resetCancelBtn" type="button" onclick="closeResetConfirm()">취소</button>
+      <button class="modal-btn danger-solid" id="resetOkBtn" type="button" onclick="resetAllSettings()">확인</button>
+    </div>
+  </div>
+</div>
 
 <!-- 내려받은 파일에 저장된 설정 (프리셋·논제·팀 이름). 온라인 사이트에서는 비어 있음 -->
 <script type="application/json" id="saved-settings">null</script>
@@ -994,6 +1075,9 @@
     },
   };
   
+  // 웹 페이지 처음 상태의 프리셋 (설정 초기화 때 되돌릴 기준)
+  const ORIGINAL_PRESETS = JSON.parse(JSON.stringify(presets));
+
   // ========== 파일에 저장된 설정 ==========
   // 내려받은 파일이면 그 안에 저장해 둔 프리셋으로 바꿔 씀
   let SAVED = null;
@@ -1695,11 +1779,12 @@
       `📊 ${editingStages.length}개 단계 · 총 발언시간 ${min}분 ${sec}초`;
   }
   
-  function saveSettings() {
+  // '적용': 불러오거나 고친 단계를 메인 화면에 적용하고 설정 창을 닫음 (성공하면 true)
+  function applySettings() {
     // 유효성 검사
     for (const s of editingStages) {
-      if (!s.name.trim()) { alert('단계 이름을 모두 입력해주세요.'); return; }
-      if (s.sec <= 0) { alert(`"${s.name}" 단계의 시간을 1초 이상으로 설정해주세요.`); return; }
+      if (!s.name.trim()) { toast('단계 이름을 모두 입력해 주세요.', 'warn'); return false; }
+      if (s.sec <= 0) { toast(`"${s.name}" 단계의 시간을 1초 이상으로 정해 주세요.`, 'warn'); return false; }
     }
     
     stages = JSON.parse(JSON.stringify(editingStages));
@@ -1714,7 +1799,46 @@
     updateDisplay();
     updateFormatToggle();
     closeSettings();
-    if (IS_LOCAL_FILE) saveToFile();
+    markUnsaved();
+    return true;
+  }
+
+  // '내려받기'(내려받은 파일에서는 '파일에 저장'): 적용한 뒤 그 설정이 담긴 파일로 저장
+  function downloadFromSettings() {
+    if (!applySettings()) return;
+    fileButton();
+  }
+
+  // '초기화': 프리셋·논제·팀 이름 등 모든 설정을 웹 페이지 처음 상태로
+  function openResetConfirm() {
+    document.getElementById('resetConfirm').hidden = false;
+    document.getElementById('resetCancelBtn').focus();
+  }
+  function closeResetConfirm() {
+    document.getElementById('resetConfirm').hidden = true;
+  }
+  function resetAllSettings() {
+    closeResetConfirm();
+    stopTimer();
+    Object.keys(presets).forEach(k => { delete presets[k]; });
+    Object.assign(presets, JSON.parse(JSON.stringify(ORIGINAL_PRESETS)));
+    document.getElementById('topicInput').value = '';
+    document.getElementById('proName').value = '';
+    document.getElementById('conName').value = '';
+    activePresetKey = 'perf33';
+    stages = JSON.parse(JSON.stringify(presets.perf33.stages));
+    currentStage = -1;
+    timeLeft = 0;
+    showOpening();
+    buildProgress();
+    updateDisplay();
+    updateFormatToggle();
+    fitTopic();
+    closeSettings();
+    markUnsaved();
+    toast(IS_LOCAL_FILE
+      ? '처음 설정으로 되돌렸어요. 이 파일에도 남기려면 💾 저장을 누르세요.'
+      : '처음 설정으로 되돌렸어요.', 'ok');
   }
   
   // ========== 내려받기 / 파일에 저장 ==========
@@ -1814,6 +1938,10 @@
     if (IS_LOCAL_FILE) document.getElementById('fileBtnLabel').textContent = ' 저장';
   }
   if (IS_LOCAL_FILE) {
+    const dl = document.getElementById('settingsDownloadBtn');
+    dl.textContent = '💾 파일에 저장';
+    dl.dataset.tip = '설정을 이 파일에 저장합니다. 다음에 이 파일을 열면 저장한 설정으로 시작합니다.';
+    document.getElementById('settingsApplyBtn').dataset.tip = '수정한 값은 새로고침(F5) 후 초기화됩니다. 필요한 경우 파일에 저장하세요.';
     document.getElementById('fileBtnIcon').textContent = '💾';
     document.getElementById('fileBtnLabel').textContent = ' 저장';
     document.getElementById('fileBtn').title = '지금 설정(프리셋·논제·팀 이름)을 이 파일에 저장';
@@ -1899,6 +2027,10 @@
 
   // ========== 키보드 ==========
   document.addEventListener('keydown', (e) => {
+    if (!document.getElementById('resetConfirm').hidden) {
+      if (e.code === 'Escape') { e.preventDefault(); closeResetConfirm(); }
+      return;
+    }
     // 논제 메뉴가 열려 있으면 Esc로 닫기만 하고 다른 단축키는 막음
     if (document.getElementById('topicMenu').classList.contains('show')) {
       if (e.code === 'Escape') { e.preventDefault(); toggleTopicMenu(false); document.getElementById('topicPickBtn').focus(); }
