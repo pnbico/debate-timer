@@ -370,12 +370,61 @@
   }
   
   /* 하단 진행바 + 컨트롤 */
+  /* 아래쪽: 진행 순서 바(위) + 조작 줄(아래) */
   .bottom {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 2vw;
-    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2vh;
+    min-width: 0;
   }
+  .control-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 2vw;
+  }
+
+  /* 단축키 안내 (노란색) */
+  .keys {
+    grid-column: 1;
+    justify-self: start;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6vh 1vw;
+    color: #fbbf24;
+    font-size: max(1.55vh, 11px);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .keys span { display: inline-flex; align-items: center; gap: 0.35em; }
+  .keys kbd {
+    font-family: inherit;
+    font-size: 0.9em;
+    font-weight: 800;
+    min-width: 1.9em;
+    text-align: center;
+    padding: 0.1em 0.5em;
+    border-radius: 0.45em;
+    border: 1px solid rgba(251,191,36,0.7);
+    border-bottom-width: 3px;
+    background: rgba(251,191,36,0.12);
+    color: #fde68a;
+  }
+  @media (max-width: 1100px) { .keys { display: none; } }
+
+  /* 제작자 정보 (조작 줄 오른쪽 빈칸) */
+  .credit {
+    grid-column: 3;
+    justify-self: end;
+    text-align: right;
+    font-size: max(1.3vh, 10px);
+    line-height: 1.4;
+    color: rgba(255,255,255,0.5);
+    min-width: 0;
+    word-break: keep-all;
+  }
+  .credit .credit-title { color: rgba(255,255,255,0.78); font-weight: 700; }
+
   
   .progress {
     display: flex;
@@ -421,6 +470,8 @@
     display: flex;
     gap: 0.8vw;
   }
+  .control-row .controls { grid-column: 2; }
+  .controls .ctrl-btn.danger { margin-left: 1.2vw; }
   .ctrl-btn {
     padding: 1.5vh 1.5vw;
     border: none;
@@ -443,14 +494,6 @@
   .ctrl-btn.primary.paused { background: #f59e0b; }
   .ctrl-btn.danger { background: rgba(239,68,68,0.3); }
   .ctrl-btn.danger:hover { background: rgba(239,68,68,0.5); }
-  
-  .hint {
-    position: absolute;
-    bottom: 0.5vh;
-    right: 1vw;
-    font-size: max(1.2vh, 10px);
-    opacity: 0.4;
-  }
   
   /* ========= 설정 모달 ========= */
   .modal-overlay {
@@ -828,7 +871,6 @@
       <div class="timer" id="timer">00:00</div>
       <div class="speaker-tag both" id="speakerTag">준비</div>
       <div class="mc-line" id="mcLine" aria-live="polite"></div>
-      <div class="hint">Space: 시작/정지 · ←→: 이전/다음 · F: 전체화면</div>
     </div>
     
     <!-- 반대팀 -->
@@ -842,11 +884,23 @@
   <!-- 하단: 진행바 + 컨트롤 -->
   <div class="bottom">
     <div class="progress" id="progress"><div class="step"><span class="step-num">1</span>찬성 1입론<br><span style="font-size:1vh;opacity:0.7">03:00</span></div><div class="step"><span class="step-num">2</span>반대 교차<br><span style="font-size:1vh;opacity:0.7">02:00</span></div><div class="step"><span class="step-num">3</span>반대 1입론<br><span style="font-size:1vh;opacity:0.7">03:00</span></div><div class="step"><span class="step-num">4</span>찬성 교차<br><span style="font-size:1vh;opacity:0.7">02:00</span></div><div class="step"><span class="step-num">5</span>찬성 2입론<br><span style="font-size:1vh;opacity:0.7">03:00</span></div><div class="step"><span class="step-num">6</span>반대 교차<br><span style="font-size:1vh;opacity:0.7">02:00</span></div><div class="step"><span class="step-num">7</span>반대 2입론<br><span style="font-size:1vh;opacity:0.7">03:00</span></div><div class="step"><span class="step-num">8</span>찬성 교차<br><span style="font-size:1vh;opacity:0.7">02:00</span></div><div class="step"><span class="step-num">9</span>반대 최종<br><span style="font-size:1vh;opacity:0.7">03:00</span></div><div class="step"><span class="step-num">10</span>찬성 최종<br><span style="font-size:1vh;opacity:0.7">03:00</span></div></div>
-    <div class="controls">
-      <button class="ctrl-btn" onclick="prevStage()">◀ 이전</button>
-      <button class="ctrl-btn primary" id="playBtn" onclick="togglePlay()">▶ 시작</button>
-      <button class="ctrl-btn" onclick="nextStage()">다음 ▶</button>
-      <button class="ctrl-btn danger" onclick="resetAll()">초기화</button>
+    <div class="control-row">
+      <div class="keys" aria-label="단축키">
+        <span><kbd>Space</kbd>시작·정지</span>
+        <span><kbd>←</kbd><kbd>→</kbd>이전·다음</span>
+        <span><kbd>F</kbd>전체화면</span>
+      </div>
+      <div class="controls">
+        <button class="ctrl-btn" onclick="prevStage()">◀ 이전</button>
+        <button class="ctrl-btn primary" id="playBtn" onclick="togglePlay()">▶ 시작</button>
+        <button class="ctrl-btn" onclick="nextStage()">다음 ▶</button>
+        <button class="ctrl-btn danger" onclick="resetAll()">초기화</button>
+      </div>
+      <div class="credit" aria-label="제작 정보">
+        <div class="credit-title">CEDA 토론 진행 도구</div>
+        <div>평촌고 「화법과 언어」 수업용으로 수정 배포함.</div>
+        <div>(원작: 세명고 이동진 교사)</div>
+      </div>
     </div>
   </div>
 </div>
