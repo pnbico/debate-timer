@@ -16,6 +16,10 @@
 <!-- 탭 아이콘: 찬성(파랑)·반대(빨강) 초시계. 파일 안에 들어 있어 내려받은 파일에서도 보임 -->
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230a0e1a'/%3E%3Crect x='27' y='4' width='10' height='7' rx='2' fill='%23fbbf24'/%3E%3Cpath d='M32 14a22 22 0 0 0 0 44z' fill='%233b82f6'/%3E%3Cpath d='M32 14a22 22 0 0 1 0 44z' fill='%23ef4444'/%3E%3Ccircle cx='32' cy='36' r='22' fill='none' stroke='%23fff' stroke-width='4'/%3E%3Cpath d='M32 36V22' stroke='%23fff' stroke-width='4.5' stroke-linecap='round'/%3E%3Ccircle cx='32' cy='36' r='4' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="https://pnbico.github.io/debate-timer/icon-180.png">
+<!-- 글꼴: Pretendard (SIL 오픈 폰트 라이선스). 화면에 쓰인 글자 조각만 내려받음.
+     인터넷이 없거나 막혀 있으면 기기 기본 글꼴(맑은 고딕 등)로 보임 -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   /* 스크롤바·숫자 입력칸 등 브라우저 기본 부품도 어두운 색으로 */
@@ -24,7 +28,7 @@
     width: 100%; height: 100%;
     background: #0a0e1a;
     color: #fff;
-    font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
+    font-family: 'Pretendard Variable', 'Pretendard', 'Malgun Gothic', sans-serif;
     overflow: hidden;
     user-select: none;
   }
@@ -487,6 +491,8 @@
     transform: translateY(-0.3vh);
   }
   .step .step-num { font-size: max(1.3vh, 10px); opacity: 0.85; display: block; font-weight: 800; }
+  /* Pretendard는 원문자(①②③)를 작게 그려서, 그 글꼴을 불러왔을 때만 키움 */
+  .pt-font .step .cnum { font-size: 1.25em; line-height: 1; vertical-align: -0.06em; }
   .step .step-dur { font-size: max(1.25vh, 10px); opacity: 0.9; font-weight: 600; }
   
   .controls {
@@ -1225,7 +1231,8 @@
     stages.forEach((s, i) => {
       const div = document.createElement('div');
       div.className = 'step ' + (s.side || '');
-      div.innerHTML = `<span class="step-num">${stepLabel(i)}</span>${s.short || s.name}<br><span class="step-dur">${fmt(s.sec)}</span>`;
+      const label = String(s.short || s.name).replace(/([①-⑨])/g, '<span class="cnum">$1</span>');
+      div.innerHTML = `<span class="step-num">${stepLabel(i)}</span>${label}<br><span class="step-dur">${fmt(s.sec)}</span>`;
       div.onclick = () => jumpTo(i);
       el.appendChild(div);
     });
@@ -1402,8 +1409,9 @@
         : '▶ 계속';
       playBtn.classList.remove('paused');
     }
-    
+
     updateProgress();
+    updateWakeLock();
   }
   
   // ========== 남은 시간 알림 ==========
@@ -1850,9 +1858,10 @@
   function openSettings() {
     if (isRunning) pauseTimer();
     
-    // 현재 상태를 모달에 복사
+    // 현재 상태를 모달에 복사 (설정 창 안에서 고르는 프리셋은 '적용'해야 실제로 바뀜)
     editingStages = JSON.parse(JSON.stringify(stages));
-    
+    editingPresetKey = activePresetKey;
+
     renderPresets();
     renderStageList();
     document.getElementById('settingsModal').classList.add('show');
@@ -1867,18 +1876,19 @@
     grid.innerHTML = '';
     Object.entries(presets).forEach(([key, p]) => {
       const btn = document.createElement('button');
-      btn.className = 'preset-btn' + (key === activePresetKey ? ' active' : '');
+      btn.className = 'preset-btn' + (key === editingPresetKey ? ' active' : '');
       btn.innerHTML = `<div class="preset-name">${p.name}</div><div class="preset-desc">${p.desc}</div>`;
       btn.onclick = () => loadPreset(key);
       grid.appendChild(btn);
     });
   }
   
-  let activePresetKey = DEFAULT_PRESET;
+  let activePresetKey = DEFAULT_PRESET;   // 지금 화면에 쓰는 프리셋
+  let editingPresetKey = DEFAULT_PRESET;  // 설정 창에서 골라 둔 프리셋 ('취소'하면 버려짐)
   function loadPreset(key) {
     const p = presets[key];
     editingStages = JSON.parse(JSON.stringify(p.stages));
-    activePresetKey = key;
+    editingPresetKey = key;
     renderPresets();
     renderStageList();
     // 시각적 피드백
@@ -1959,6 +1969,7 @@
     
     stages = JSON.parse(JSON.stringify(editingStages));
     // 고친 내용을 그 프리셋 자체에 반영 (3대3/4대4 버튼, 내려받기·파일 저장에도 쓰임)
+    activePresetKey = editingPresetKey;
     if (presets[activePresetKey]) presets[activePresetKey].stages = JSON.parse(JSON.stringify(editingStages));
     
     currentStage = -1;
@@ -2117,9 +2128,47 @@
   // 페이지를 떠나기 전에 확인: 토론이 진행 중일 때(새로고침·탭 닫기·뒤로 가기 실수 방지),
   // 내려받은 파일에서 저장하지 않은 설정이 있을 때
   window.addEventListener('beforeunload', e => {
-    const midDebate = currentStage >= 0 && !(currentStage === stages.length - 1 && timeLeft <= 0);
-    if (midDebate || (IS_LOCAL_FILE && unsaved)) { e.preventDefault(); e.returnValue = ''; }
+    if (debateInProgress() || (IS_LOCAL_FILE && unsaved)) { e.preventDefault(); e.returnValue = ''; }
   });
+
+  // 토론이 시작된 뒤 마지막 순서가 끝나기 전까지 (대기·일시정지 포함)
+  function debateInProgress() {
+    return currentStage >= 0 && !(currentStage === stages.length - 1 && timeLeft <= 0);
+  }
+
+  // ========== 화면 꺼짐 방지 ==========
+  // 토론이 진행되는 동안에는 입력이 없어도 화면이 어두워지거나 꺼지지 않게 함 (브라우저의 Screen Wake Lock)
+  // 다른 탭으로 가거나 창을 내리면 브라우저가 알아서 풀고, 돌아오면 다시 켬. 지원하지 않는 브라우저에서는 아무 일도 안 함
+  let wakeLock = null, wakeBusy = false, wakeRetryAt = 0;
+  function wantWakeLock() {
+    return debateInProgress() && document.visibilityState === 'visible';
+  }
+  async function updateWakeLock() {
+    if (!('wakeLock' in navigator) || wakeBusy) return;
+    const want = wantWakeLock();
+    if (want === !!wakeLock) return;
+    if (want && Date.now() < wakeRetryAt) return;   // 거절된 직후에는 30초 쉬었다가 다시 시도
+    wakeBusy = true;
+    let refused = false;
+    try {
+      if (want) {
+        const lock = await navigator.wakeLock.request('screen');
+        lock.addEventListener('release', () => { if (wakeLock === lock) wakeLock = null; });
+        wakeLock = lock;
+      } else {
+        const lock = wakeLock; wakeLock = null;
+        await lock.release();
+      }
+    } catch (e) {
+      // 배터리 부족 등으로 브라우저가 거절한 경우: 타이머는 그대로 쓰고 나중에 다시 시도
+      if (want) { wakeLock = null; refused = true; wakeRetryAt = Date.now() + 30000; }
+    } finally {
+      wakeBusy = false;
+    }
+    // 기다리는 사이에 토론 상태가 바뀌었으면 한 번 더 맞춤
+    if (!refused && wantWakeLock() !== !!wakeLock) setTimeout(updateWakeLock, 0);
+  }
+  document.addEventListener('visibilitychange', updateWakeLock);
 
   // ========== 논제 고르기 ==========
   const TOPICS = [
@@ -2197,6 +2246,20 @@
     if (!document.getElementById('topicPicker').contains(e.target)) toggleTopicMenu(false);
   });
   window.addEventListener('resize', fitTopic);
+  // 글꼴이 늦게 도착하면 글자 폭이 바뀌므로 논제 크기를 다시 맞추고,
+  // Pretendard를 실제로 불러왔는지 표시 (불러오지 못했으면 기기 기본 글꼴 그대로)
+  function onFontsLoaded() {
+    try {
+      for (const f of document.fonts) {
+        if (/Pretendard/.test(f.family) && f.status === 'loaded') { document.documentElement.classList.add('pt-font'); break; }
+      }
+    } catch (e) {}
+    fitTopic();
+  }
+  if (document.fonts) {
+    document.fonts.ready.then(onFontsLoaded);
+    document.fonts.addEventListener && document.fonts.addEventListener('loadingdone', onFontsLoaded);
+  }
 
   // ========== 키보드 ==========
   document.addEventListener('keydown', (e) => {
