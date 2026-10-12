@@ -877,6 +877,26 @@
   .modal-btn.go:hover { background: #f59e0b; }
   .confirm-box.calm { border-color: rgba(251,191,36,0.55); }
   .confirm-box.calm .warn-icon { background: rgba(251,191,36,0.2); color: #fbbf24; }
+  /* 휴대폰·태블릿: 주소창이 보이는 동안에는 실제로 보이는 높이(dvh)에 맞춤 (아랫부분 잘림 방지).
+     PC·크롬북에서는 dvh와 vh가 같아서 변화 없음. dvh를 모르는 옛 브라우저는 위의 vh 그대로 */
+  @supports (height: 100dvh) {
+    :root { --u: min(1dvh, calc(100vw * 9 / 1600)); }
+    .stage { height: 100dvh; max-width: calc(100dvh * 2.2); }
+    .modal { height: 88dvh; }
+  }
+  /* 키가 아주 낮은 화면(휴대폰 가로, 브라우저를 크게 확대한 경우): 글자 최소 크기를 조금 낮추고
+     진행 바 칸을 넓혀 줄바꿈을 줄여서, 맨 아래 버튼까지 한 화면에 들어오게. PC·크롬북 보통 화면은 해당 없음 */
+  @media (max-height: 480px) {
+    .team-name { font-size: max(calc(2.6 * var(--u)), 11px); }
+    .slot-title { font-size: max(calc(2.3 * var(--u)), 11px); }
+    .slot-roles { font-size: max(calc(1.5 * var(--u)), 9px); }
+    .slot-badge { font-size: max(calc(1.6 * var(--u)), 9px); }
+    .mc-line { min-height: max(calc(7 * var(--u)), 34px); font-size: max(calc(1.9 * var(--u)), 10.5px); line-height: 1.35; }
+    .step { min-width: 7.5vw; font-size: max(calc(1.7 * var(--u)), 11px); line-height: 1.2; }
+    .step .step-num { font-size: max(calc(1.3 * var(--u)), 9px); }
+    .step .step-dur { font-size: max(calc(1.25 * var(--u)), 9px); }
+    .credit { font-size: max(calc(1.3 * var(--u)), 8.5px); line-height: 1.25; }
+  }
 </style>
 </head>
 <body id="artifacts-component-root-html">
@@ -2290,6 +2310,8 @@
       if (e.target.id === 'topicInput' && e.code === 'Enter') e.target.blur();   // Enter로 입력 마치기
       return;
     }
+    // 키를 누르고 있어서 저절로 반복되는 입력은 무시 (→를 누르고 있으면 여러 차례를 건너뛰던 문제)
+    if (e.repeat && ['Space', 'ArrowRight', 'ArrowLeft', 'KeyF'].includes(e.code)) { e.preventDefault(); return; }
     if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
     else if (e.code === 'ArrowRight') { e.preventDefault(); nextStage(); }
     else if (e.code === 'ArrowLeft') { e.preventDefault(); prevStage(); }
