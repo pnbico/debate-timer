@@ -1240,7 +1240,7 @@
     const circled = (num) => (num >= 1 && num <= 9) ? '①②③④⑤⑥⑦⑧⑨'[num - 1] : '(' + num + ')';
     const m = n.match(/^(찬성|반대|정부|야당)\s*(\d+)\s*(?:번|토론자)\s*(.+)$/);
     if (m) {
-      const act = m[3].replace(/\s+/g, '');
+      const act = m[3].replace(/\s+/g, '').replace(/["'“”‘’「」『』]/g, '');   // 따옴표는 빼고 앞 두 글자
       return m[1] + circled(parseInt(m[2], 10)) + ' ' + act.slice(0, 2);
     }
     return n.length > 8 ? n.slice(0, 8) : n;
@@ -1259,7 +1259,9 @@
     stages.forEach((s, i) => {
       const div = document.createElement('div');
       div.className = 'step ' + (s.side || '');
-      const label = String(s.short || s.name).replace(/([①-⑨])/g, '<span class="cnum">$1</span>');
+      // 이름 속 <, >, &, " 가 HTML로 읽히지 않게 바꾼 뒤 원문자에만 꾸밈 표시
+      const safe = String(s.short || s.name).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+      const label = safe.replace(/([①-⑨])/g, '<span class="cnum">$1</span>');
       div.innerHTML = `<span class="step-num">${stepLabel(i)}</span>${label}<br><span class="step-dur">${fmt(s.sec)}</span>`;
       div.onclick = () => jumpTo(i);
       el.appendChild(div);
@@ -1926,46 +1928,88 @@
     setTimeout(() => toast.classList.remove('show'), 1800);
   }
   
+  // 단계 목록의 한 줄을 만듦.
+  // 이름은 HTML 글자로 끼워 넣지 않고 입력칸의 값으로 직접 넣음 (이름에 큰따옴표가 있어도 잘리지 않게)
   function renderStageList() {
     const list = document.getElementById('stageList');
-    list.innerHTML = '';
+    list.textContent = '';
     editingStages.forEach((s, i) => {
-      const min = Math.floor(s.sec / 60);
-      const sec = s.sec % 60;
       const row = document.createElement('div');
       row.className = 'stage-row';
-      row.innerHTML = `
-        <div class="stage-num">${i+1}</div>
-        <input type="text" value="${s.name}" placeholder="단계 이름" oninput="updateStage(${i},'name',this.value)" />
-        <input type="number" min="0" max="60" value="${min}" oninput="updateStageTime(${i},'min',this.value)" />
-        <input type="number" min="0" max="59" value="${sec}" oninput="updateStageTime(${i},'sec',this.value)" />
-        <select class="${s.side}" onchange="updateStage(${i},'side',this.value); this.className=this.value;">
-          <option value="pro" ${s.side==='pro'?'selected':''}>찬성</option>
-          <option value="con" ${s.side==='con'?'selected':''}>반대</option>
-          <option value="both" ${s.side==='both'?'selected':''}>양측</option>
-        </select>
-        <button class="delete-btn" onclick="deleteStage(${i})">✕</button>
-      `;
+
+      const num = document.createElement('div');
+      num.className = 'stage-num';
+      num.textContent = i + 1;
+
+      const name = document.createElement('input');
+      name.type = 'text';
+      name.placeholder = '단계 이름';
+      name.value = s.name;
+      name.oninput = () => updateStage(i, 'name', name.value);
+
+      const numBox = (value, max) => {
+        const el = document.createElement('input');
+        el.type = 'number';
+        el.min = '0';
+        el.max = String(max);
+        el.value = String(value);
+        el.oninput = () => updateStageTime(i, row);    // 고치는 동안: 실제 시간만 계산 (칸 숫자는 그대로)
+        el.onchange = () => tidyStageTime(i, row);      // 칸에서 빠져나오면: 칸 숫자를 실제 값으로 정리
+        return el;
+      };
+      const min = numBox(Math.floor(s.sec / 60), 60);
+      const sec = numBox(s.sec % 60, 59);
+
+      const side = document.createElement('select');
+      side.className = s.side;
+      [['pro', '찬성'], ['con', '반대'], ['both', '양측']].forEach(([v, t]) => {
+        const o = document.createElement('option');
+        o.value = v; o.textContent = t; o.selected = s.side === v;
+        side.appendChild(o);
+      });
+      side.onchange = () => { updateStage(i, 'side', side.value); side.className = side.value; };
+
+      const del = document.createElement('button');
+      del.className = 'delete-btn';
+      del.type = 'button';
+      del.textContent = '✕';
+      del.onclick = () => deleteStage(i);
+
+      row.append(num, name, min, sec, side, del);
       list.appendChild(row);
     });
     updateTotalTime();
   }
-  
+
   function updateStage(idx, field, value) {
     editingStages[idx][field] = value;
     if (field === 'name') {
       editingStages[idx].short = makeShort(value);
     }
   }
-  
-  function updateStageTime(idx, unit, value) {
-    const v = parseInt(value) || 0;
-    const cur = editingStages[idx].sec;
-    if (unit === 'min') {
-      editingStages[idx].sec = v * 60 + (cur % 60);
-    } else {
-      editingStages[idx].sec = Math.floor(cur / 60) * 60 + Math.min(59, v);
-    }
+
+  // 분·초 두 칸을 합쳐 실제 시간(초)으로 계산.
+  // 빈칸·음수는 0, 소수 분은 초로 바꿈 (1.5분 = 90초), 초는 반올림
+  function readStageTime(row) {
+    const [m, s] = row.querySelectorAll('input[type="number"]');
+    const n = (el) => { const v = parseFloat(el.value); return isFinite(v) && v > 0 ? v : 0; };
+    return Math.round(n(m) * 60 + n(s));
+  }
+
+  // 칸을 고치는 동안: 두 칸에 보이는 숫자 그대로 합친 시간을 저장 (총 발언시간도 바로 바뀜)
+  function updateStageTime(idx, row) {
+    editingStages[idx].sec = readStageTime(row);
+    updateTotalTime();
+  }
+
+  // 칸에서 빠져나오면(다른 곳 클릭·Tab·Enter): 두 칸을 실제 값으로 정리
+  // 예) 0분 75초 → 1분 15초, 1.5분 0초 → 1분 30초, -1분 30초 → 0분 30초
+  function tidyStageTime(idx, row) {
+    const total = readStageTime(row);
+    const [m, s] = row.querySelectorAll('input[type="number"]');
+    m.value = String(Math.floor(total / 60));
+    s.value = String(total % 60);
+    editingStages[idx].sec = total;
     updateTotalTime();
   }
   
