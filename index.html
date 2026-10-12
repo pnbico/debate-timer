@@ -288,7 +288,16 @@
   .slot-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: calc(0.3 * var(--u)); }
   .slot-title { display: flex; align-items: baseline; gap: 0.6em; color: rgba(255,255,255,0.88); font-weight: 800; font-size: max(calc(2.3 * var(--u)), 13px); white-space: nowrap; }
   .slot-issue { color: rgba(255,255,255,0.5); font-weight: 600; font-size: 0.72em; }
-  .slot-roles { color: rgba(255,255,255,0.5); font-weight: 500; font-size: max(calc(1.5 * var(--u)), 10px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* 역할 줄: 길면 '·' 자리에서만 두 줄로 (입론(쟁점1) 같은 묶음은 끊지 않음) */
+  .slot-roles {
+    color: rgba(255,255,255,0.5); font-weight: 500; font-size: max(calc(1.5 * var(--u)), 10px); line-height: 1.3;
+    width: 0; min-width: 100%;   /* 글자 길이가 팀 칸 너비를 밀어내지 않게 (칸 너비에 맞춰 줄임) */
+    white-space: normal; word-break: keep-all; overflow: hidden;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  }
+  .slot-roles .role { white-space: nowrap; }   /* 역할 하나는 끊지 않음 */
+  /* 역할을 통째로 두면 세 줄이 되는 칸만(화면 반쪽 창 등): 역할 안(괄호 앞)에서도 줄바꿈 허용 */
+  .slot-roles.tight .role { white-space: normal; }
   .slot-badge {
     flex-shrink: 0;
     visibility: hidden;
@@ -955,7 +964,8 @@
   @media (max-height: 480px) {
     .team-name { font-size: max(calc(2.6 * var(--u)), 11px); }
     .slot-title { font-size: max(calc(2.3 * var(--u)), 11px); }
-    .slot-roles { font-size: max(calc(1.5 * var(--u)), 9px); }
+    .slot-roles { font-size: max(calc(1.5 * var(--u)), 9px); line-height: normal; display: block; white-space: nowrap; text-overflow: ellipsis; }   /* 두 줄 둘 자리가 없어 한 줄로 */
+    .slot-roles .role, .slot-roles.tight .role { white-space: nowrap; }
     .slot-badge { font-size: max(calc(1.6 * var(--u)), 9px); }
     .mc-line { min-height: max(calc(7 * var(--u)), 34px); font-size: max(calc(1.9 * var(--u)), 10.5px); line-height: 1.35; }
     .step { min-width: 7.5vw; font-size: max(calc(1.7 * var(--u)), 11px); line-height: 1.2; }
@@ -1365,7 +1375,9 @@
   // ========== 토론자 슬롯 ==========
   const SIDE_KEY = { '찬성': 'pro', '정부': 'pro', '반대': 'con', '야당': 'con' };
 
-  // 각 측 토론자 수와 토론자별 맡은 순서(입론·교차조사·반론·최후변론)를 단계 목록에서 뽑음
+  // 각 측 토론자 수와 토론자별 맡은 순서를 단계 목록에서 뽑음.
+  // 쟁점은 그 쟁점을 맡은 순서에만 붙임 → 예) 입론(쟁점1)·교차조사·반론(쟁점1)
+  // (상호토론·최후변론처럼 쟁점이 정해지지 않은 순서는 이름만)
   function slotInfo() {
     const info = { pro: {}, con: {} };
     stages.forEach(st => {
@@ -1373,7 +1385,8 @@
       if (!p || !SIDE_KEY[p.side]) return;
       const d = info[SIDE_KEY[p.side]][p.num] = info[SIDE_KEY[p.side]][p.num] || { roles: [], issue: '' };
       const act = p.act.replace(/\s+/g, '');
-      if (!d.roles.includes(act)) d.roles.push(act);
+      const role = act + (p.issue ? `(${p.issue.replace(/\s+/g, '')})` : '');
+      if (!d.roles.includes(role)) d.roles.push(role);
       if (!d.issue && /입론|반론/.test(act) && /^쟁점/.test(p.issue)) d.issue = p.issue;
     });
     return info;
@@ -1393,9 +1406,16 @@
         const main = document.createElement('div'); main.className = 'slot-main';
         const title = document.createElement('div'); title.className = 'slot-title';
         title.textContent = `${num}토론자`;
-        if (d.issue) { const is = document.createElement('span'); is.className = 'slot-issue'; is.textContent = d.issue; title.appendChild(is); }
         const roles = document.createElement('div'); roles.className = 'slot-roles';
-        roles.textContent = d.roles.join(' · ');
+        roles.title = d.roles.join('·');
+        // 역할 하나(예: 반론(쟁점1))는 끊기지 않는 한 덩어리로, '·' 뒤에서만 줄이 바뀜
+        d.roles.forEach((r, k) => {
+          const span = document.createElement('span');
+          span.className = 'role';
+          span.textContent = r + (k < d.roles.length - 1 ? '·' : '');
+          roles.appendChild(span);
+          if (k < d.roles.length - 1) roles.appendChild(document.createTextNode('\u200B'));
+        });
         const badge = document.createElement('div'); badge.className = 'slot-badge';
         main.append(title, roles);
         slot.append(main, badge);
@@ -1430,12 +1450,24 @@
     return on;
   }
 
+  let lastSlotState = '';
   function updateSlots() {
     const on = currentStage >= 0 ? slotActivity(stages[currentStage]) : {};
     document.querySelectorAll('.slot').forEach(el => {
       const label = on[el.dataset.key];
       el.classList.toggle('on', !!label);
       el.querySelector('.slot-badge').textContent = label || '';
+    });
+    // 표시(질문·답변 등)가 바뀌면 역할 줄 너비가 달라지므로 줄바꿈을 다시 맞춤
+    const state = JSON.stringify(on) + '|' + [...document.querySelectorAll('.slot-roles')].map(e => e.textContent).join('/');
+    if (state !== lastSlotState) { lastSlotState = state; fitRoles(); }
+  }
+
+  // 역할 줄: 역할을 통째로 두고 두 줄에 다 들어가면 그대로, 넘치면 그 칸만 역할 안에서도 줄바꿈 허용
+  function fitRoles() {
+    document.querySelectorAll('.slot-roles').forEach(el => {
+      el.classList.remove('tight');
+      if (el.scrollHeight > el.clientHeight + 1) el.classList.add('tight');
     });
   }
 
@@ -2525,7 +2557,7 @@
     if (!document.getElementById('topicMenu').classList.contains('show')) return;
     if (!document.getElementById('topicPicker').contains(e.target)) toggleTopicMenu(false);
   });
-  window.addEventListener('resize', fitTopic);
+  window.addEventListener('resize', () => { fitTopic(); fitRoles(); });
   // 글꼴이 늦게 도착하면 글자 폭이 바뀌므로 논제 크기를 다시 맞추고,
   // Pretendard를 실제로 불러왔는지 표시 (불러오지 못했으면 기기 기본 글꼴 그대로)
   function onFontsLoaded() {
@@ -2535,6 +2567,7 @@
       }
     } catch (e) {}
     fitTopic();
+    fitRoles();
   }
   if (document.fonts) {
     document.fonts.ready.then(onFontsLoaded);
