@@ -23,7 +23,12 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   /* 스크롤바·숫자 입력칸 등 브라우저 기본 부품도 어두운 색으로 */
-  :root { color-scheme: dark; }
+  :root {
+    color-scheme: dark;
+    /* 화면 틀 높이의 1%. 창이 16:9이거나 더 가로로 길면 1vh와 똑같고,
+       세로로 길면(화면 반쪽 창·4:3 프로젝터) 틀에 맞춰 줄어들어 잘리지 않음 */
+    --u: min(1vh, calc(100vw * 9 / 1600));
+  }
   html, body {
     width: 100%; height: 100%;
     background: #0a0e1a;
@@ -32,18 +37,20 @@
     overflow: hidden;
     user-select: none;
   }
+  /* 화면 틀을 창 가운데에 (세로로 긴 창에서는 위아래 가운데) */
+  body { display: flex; }
   
   .stage {
     width: 100vw;
     height: 100vh;
     aspect-ratio: 16 / 9;
-    max-width: calc(100vh * 16 / 9);
+    max-width: calc(100vh * 2.2);   /* 창이 16:9보다 가로로 길면 최대 2.2:1까지 가로를 다 씀 */
     max-height: calc(100vw * 9 / 16);
     margin: auto;
     display: grid;
     grid-template-rows: auto 1fr auto;
-    padding: 1.5vh 2vw;
-    gap: 1.5vh;
+    padding: calc(1.5 * var(--u)) 2vw;
+    gap: calc(1.5 * var(--u));
   }
   
   /* 상단 논제 영역 */
@@ -52,8 +59,8 @@
     align-items: center;
     justify-content: center;
     background: linear-gradient(90deg, rgba(59,130,246,0.15), rgba(239,68,68,0.15));
-    border-radius: 1vh;
-    padding: 1.2vh 2vw;
+    border-radius: calc(1 * var(--u));
+    padding: calc(1.2 * var(--u)) 2vw;
     border: 1px solid rgba(255,255,255,0.1);
     position: relative;
     gap: 1.5vw;
@@ -61,12 +68,12 @@
   .topic-label {
     color: #fbbf24;
     font-weight: 700;
-    font-size: 2.2vh;
+    font-size: calc(2.2 * var(--u));
     letter-spacing: 0.1em;
   }
   .topic-text {
     flex: 1;
-    font-size: 2.8vh;
+    font-size: calc(2.8 * var(--u));
     font-weight: 600;
     text-align: center;
     background: transparent;
@@ -77,7 +84,7 @@
   }
   .topic-text:focus {
     background: rgba(255,255,255,0.05);
-    border-radius: 0.5vh;
+    border-radius: calc(0.5 * var(--u));
   }
   .topic-text::placeholder { color: rgba(255,255,255,0.4); font-weight: 500; }
 
@@ -89,13 +96,13 @@
     gap: 0.4em;
     color: #fbbf24;
     font-weight: 700;
-    font-size: max(2.2vh, 13px);
+    font-size: max(calc(2.2 * var(--u)), 13px);
     letter-spacing: 0.1em;
     font-family: inherit;
     background: rgba(251,191,36,0.12);
     border: 1px solid rgba(251,191,36,0.45);
-    border-radius: 0.8vh;
-    padding: 0.6vh 0.9vw 0.6vh 1.1vw;
+    border-radius: calc(0.8 * var(--u));
+    padding: calc(0.6 * var(--u)) 0.9vw calc(0.6 * var(--u)) 1.1vw;
     cursor: pointer;
     white-space: nowrap;
   }
@@ -104,18 +111,18 @@
   .topic-pick-btn[aria-expanded="true"] .caret { transform: rotate(180deg); }
   .topic-menu {
     position: absolute;
-    top: calc(100% + 1vh);
+    top: calc(100% + calc(1 * var(--u)));
     left: 0;
     z-index: 60;
-    min-width: max(46vh, 320px);
-    padding: 0.8vh;
+    min-width: max(calc(46 * var(--u)), 320px);
+    padding: calc(0.8 * var(--u));
     background: #141a2e;
     border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 1.2vh;
-    box-shadow: 0 1.5vh 4vh rgba(0,0,0,0.6);
+    border-radius: calc(1.2 * var(--u));
+    box-shadow: 0 calc(1.5 * var(--u)) calc(4 * var(--u)) rgba(0,0,0,0.6);
     display: none;
     flex-direction: column;
-    gap: 0.3vh;
+    gap: calc(0.3 * var(--u));
   }
   .topic-menu.show { display: flex; }
   .topic-option {
@@ -124,13 +131,13 @@
     gap: 0.9em;
     width: 100%;
     text-align: left;
-    padding: 1.1vh 1.2vw;
+    padding: calc(1.1 * var(--u)) 1.2vw;
     border: none;
-    border-radius: 0.8vh;
+    border-radius: calc(0.8 * var(--u));
     background: transparent;
     color: #fff;
     font-family: inherit;
-    font-size: max(2vh, 13px);
+    font-size: max(calc(2 * var(--u)), 13px);
     font-weight: 600;
     cursor: pointer;
     white-space: nowrap;
@@ -149,21 +156,21 @@
   .topic-option .opt-check { margin-left: auto; color: #fbbf24; visibility: hidden; padding-left: 1em; }
   .topic-option.active { background: rgba(251,191,36,0.2); }
   .topic-option.active .opt-check { visibility: visible; }
-  .topic-option.custom { border-top: 1px solid rgba(255,255,255,0.1); border-radius: 0 0 0.8vh 0.8vh; margin-top: 0.3vh; color: #fde68a; }
+  .topic-option.custom { border-top: 1px solid rgba(255,255,255,0.1); border-radius: 0 0 calc(0.8 * var(--u)) calc(0.8 * var(--u)); margin-top: calc(0.3 * var(--u)); color: #fde68a; }
   .settings-btn {
     background: rgba(251,191,36,0.2);
     border: 1px solid rgba(251,191,36,0.4);
     color: #fbbf24;
-    padding: 0.8vh 1.5vw;
-    border-radius: 0.8vh;
-    font-size: 1.8vh;
+    padding: calc(0.8 * var(--u)) 1.5vw;
+    border-radius: calc(0.8 * var(--u));
+    font-size: calc(1.8 * var(--u));
     font-weight: 700;
     cursor: pointer;
     font-family: inherit;
     white-space: nowrap;
   }
   .settings-btn:hover { background: rgba(251,191,36,0.3); }
-  .settings-btn { font-size: max(1.8vh, 12px); }
+  .settings-btn { font-size: max(calc(1.8 * var(--u)), 12px); }
   .fs-btn { display: inline-flex; align-items: center; gap: 0.5em;
     background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.25); color: #e5e7eb; }
   .fs-btn:hover { background: rgba(255,255,255,0.16); }
@@ -176,9 +183,9 @@
   /* 3대3 / 4대4 빠른 전환 */
   .format-toggle {
     display: inline-flex;
-    padding: 0.4vh;
-    gap: 0.4vh;
-    border-radius: 1vh;
+    padding: calc(0.4 * var(--u));
+    gap: calc(0.4 * var(--u));
+    border-radius: calc(1 * var(--u));
     background: rgba(0,0,0,0.35);
     border: 1px solid rgba(255,255,255,0.15);
     flex-shrink: 0;
@@ -189,9 +196,9 @@
     color: rgba(255,255,255,0.7);
     font-family: inherit;
     font-weight: 800;
-    font-size: max(1.9vh, 12px);
-    padding: 0.6vh 1.2vw;
-    border-radius: 0.7vh;
+    font-size: max(calc(1.9 * var(--u)), 12px);
+    padding: calc(0.6 * var(--u)) 1.2vw;
+    border-radius: calc(0.7 * var(--u));
     cursor: pointer;
     white-space: nowrap;
   }
@@ -209,8 +216,8 @@
   .team {
     display: flex;
     flex-direction: column;
-    border-radius: 1.5vh;
-    padding: 2vh 1.5vw;
+    border-radius: calc(1.5 * var(--u));
+    padding: calc(2 * var(--u)) 1.5vw;
     border: 3px solid transparent;
     transition: all 0.3s;
     position: relative;
@@ -226,15 +233,15 @@
   .team.active {
     border-width: 4px;
     transform: scale(1.02);
-    box-shadow: 0 0 4vh currentColor;
+    box-shadow: 0 0 calc(4 * var(--u)) currentColor;
   }
   .team.pro.active { border-color: #60a5fa; color: #60a5fa; }
   .team.con.active { border-color: #f87171; color: #f87171; }
   
   .team-name {
-    font-size: max(2.6vh, 13px);
+    font-size: max(calc(2.6 * var(--u)), 13px);
     font-weight: 700;
-    margin-bottom: 1.5vh;
+    margin-bottom: calc(1.5 * var(--u));
     background: transparent;
     color: #fff;
     border: none;
@@ -244,14 +251,14 @@
   }
   .team-name:focus {
     background: rgba(255,255,255,0.05);
-    border-radius: 0.5vh;
-    padding: 0.3vh;
+    border-radius: calc(0.5 * var(--u));
+    padding: calc(0.3 * var(--u));
   }
   .team-name::placeholder { color: rgba(255,255,255,0.42); font-weight: 600; }
   .team-position {
-    font-size: 5vh;
+    font-size: calc(5 * var(--u));
     font-weight: 900;
-    margin-bottom: 0.6vh;
+    margin-bottom: calc(0.6 * var(--u));
     line-height: 1.15;
   }
 
@@ -262,40 +269,40 @@
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    gap: 1.1vh;
+    gap: calc(1.1 * var(--u));
   }
   .slot {
     flex: 1 1 0;
-    max-height: 15vh;
+    max-height: calc(15 * var(--u));
     min-height: 0;
     display: flex;
     align-items: center;
     gap: 0.8vw;
-    padding: 0.8vh 1vw;
-    border-radius: 1.1vh;
+    padding: calc(0.8 * var(--u)) 1vw;
+    border-radius: calc(1.1 * var(--u));
     background: rgba(255,255,255,0.05);
     border: 2px solid rgba(255,255,255,0.1);
     transition: background 0.25s, border-color 0.25s, transform 0.25s, box-shadow 0.25s;
   }
-  .slot-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.3vh; }
-  .slot-title { display: flex; align-items: baseline; gap: 0.6em; color: rgba(255,255,255,0.88); font-weight: 800; font-size: max(2.3vh, 13px); white-space: nowrap; }
+  .slot-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: calc(0.3 * var(--u)); }
+  .slot-title { display: flex; align-items: baseline; gap: 0.6em; color: rgba(255,255,255,0.88); font-weight: 800; font-size: max(calc(2.3 * var(--u)), 13px); white-space: nowrap; }
   .slot-issue { color: rgba(255,255,255,0.5); font-weight: 600; font-size: 0.72em; }
-  .slot-roles { color: rgba(255,255,255,0.5); font-weight: 500; font-size: max(1.5vh, 10px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .slot-roles { color: rgba(255,255,255,0.5); font-weight: 500; font-size: max(calc(1.5 * var(--u)), 10px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .slot-badge {
     flex-shrink: 0;
     visibility: hidden;
     padding: 0.35em 0.8em;
     border-radius: 999px;
     font-weight: 800;
-    font-size: max(1.6vh, 11px);
+    font-size: max(calc(1.6 * var(--u)), 11px);
     background: #fff;
     white-space: nowrap;
   }
   .slot.on { transform: translateX(0.3vw); }
   .slot.on .slot-title, .slot.on .slot-roles, .slot.on .slot-issue { color: #fff; }
   .slot.on .slot-badge { visibility: visible; }
-  .pro .slot.on { background: rgba(37,99,235,0.55); border-color: #93c5fd; box-shadow: 0 0 2.2vh rgba(96,165,250,0.45); }
-  .con .slot.on { background: rgba(220,38,38,0.5);  border-color: #fca5a5; box-shadow: 0 0 2.2vh rgba(248,113,113,0.45); }
+  .pro .slot.on { background: rgba(37,99,235,0.55); border-color: #93c5fd; box-shadow: 0 0 calc(2.2 * var(--u)) rgba(96,165,250,0.45); }
+  .con .slot.on { background: rgba(220,38,38,0.5);  border-color: #fca5a5; box-shadow: 0 0 calc(2.2 * var(--u)) rgba(248,113,113,0.45); }
   .pro .slot-badge { color: #1d4ed8; }
   .con .slot-badge { color: #b91c1c; }
   .pro .team-position { color: #60a5fa; }
@@ -308,25 +315,25 @@
     align-items: center;
     justify-content: center;
     background: rgba(255,255,255,0.03);
-    border-radius: 1.5vh;
-    padding: 2vh;
+    border-radius: calc(1.5 * var(--u));
+    padding: calc(2 * var(--u));
     position: relative;
     border: 1px solid rgba(255,255,255,0.08);
   }
   .stage-name {
-    font-size: 3.2vh;
+    font-size: calc(3.2 * var(--u));
     font-weight: 700;
-    margin-bottom: 1vh;
+    margin-bottom: calc(1 * var(--u));
     color: #fbbf24;
     text-align: center;
   }
   .stage-counter {
-    font-size: 1.8vh;
+    font-size: calc(1.8 * var(--u));
     opacity: 0.6;
-    margin-bottom: 1.5vh;
+    margin-bottom: calc(1.5 * var(--u));
   }
   .timer {
-    font-size: 18vh;
+    font-size: calc(18 * var(--u));
     font-weight: 900;
     font-variant-numeric: tabular-nums;
     line-height: 1;
@@ -345,10 +352,10 @@
   }
   
   .speaker-tag {
-    margin-top: 1.5vh;
-    padding: 0.8vh 2vw;
-    border-radius: 5vh;
-    font-size: 2.2vh;
+    margin-top: calc(1.5 * var(--u));
+    padding: calc(0.8 * var(--u)) 2vw;
+    border-radius: calc(5 * var(--u));
+    font-size: calc(2.2 * var(--u));
     font-weight: 700;
   }
   .speaker-tag.pro { background: #2563eb; }
@@ -357,12 +364,12 @@
 
   /* 사회자 멘트: 시간이 끝나면 다음 단계 안내. 공간은 항상 확보해 두어 화면이 흔들리지 않게 */
   .mc-line {
-    margin-top: 1.6vh;
+    margin-top: calc(1.6 * var(--u));
     width: 88%;
-    min-height: max(7vh, 44px);
-    padding: 0.9vh 1.4vw;
-    border-radius: 1vh;
-    font-size: max(1.9vh, 12px);
+    min-height: max(calc(7 * var(--u)), 44px);
+    padding: calc(0.9 * var(--u)) 1.4vw;
+    border-radius: calc(1 * var(--u));
+    font-size: max(calc(1.9 * var(--u)), 12px);
     line-height: 1.45;
     text-align: center;
     word-break: keep-all;
@@ -396,7 +403,7 @@
   .bottom {
     display: flex;
     flex-direction: column;
-    gap: 1.2vh;
+    gap: calc(1.2 * var(--u));
     min-width: 0;
   }
   .control-row {
@@ -412,9 +419,9 @@
     justify-self: start;
     display: flex;
     flex-wrap: wrap;
-    gap: 0.6vh 1vw;
+    gap: calc(0.6 * var(--u)) 1vw;
     color: #fbbf24;
-    font-size: max(1.55vh, 11px);
+    font-size: max(calc(1.55 * var(--u)), 11px);
     font-weight: 700;
     white-space: nowrap;
   }
@@ -439,7 +446,7 @@
     grid-column: 3;
     justify-self: end;
     text-align: right;
-    font-size: max(1.3vh, 10px);
+    font-size: max(calc(1.3 * var(--u)), 10px);
     line-height: 1.4;
     color: rgba(255,255,255,0.5);
     min-width: 0;
@@ -452,8 +459,8 @@
     display: flex;
     gap: 0.5vw;
     background: rgba(255,255,255,0.04);
-    padding: 1vh;
-    border-radius: 1vh;
+    padding: calc(1 * var(--u));
+    border-radius: calc(1 * var(--u));
     overflow-x: auto;
   }
   /* 얇고 어두운 스크롤바 (윈도우의 흰 기본 스크롤바 대신) */
@@ -464,9 +471,9 @@
   .step {
     flex: 1;
     min-width: 6.5vw;
-    padding: 1.1vh 0.6vw;
-    border-radius: 0.6vh;
-    font-size: max(1.7vh, 12px);
+    padding: calc(1.1 * var(--u)) 0.6vw;
+    border-radius: calc(0.6 * var(--u));
+    font-size: max(calc(1.7 * var(--u)), 12px);
     font-weight: 700;
     text-align: center;
     background: rgba(255,255,255,0.08);
@@ -487,13 +494,13 @@
     background: #fbbf24; 
     color: #0a0e1a; 
     border-color: #fff;
-    box-shadow: 0 0 2.2vh rgba(251,191,36,0.6);
-    transform: translateY(-0.3vh);
+    box-shadow: 0 0 calc(2.2 * var(--u)) rgba(251,191,36,0.6);
+    transform: translateY(-calc(0.3 * var(--u)));
   }
-  .step .step-num { font-size: max(1.3vh, 10px); opacity: 0.85; display: block; font-weight: 800; }
+  .step .step-num { font-size: max(calc(1.3 * var(--u)), 10px); opacity: 0.85; display: block; font-weight: 800; }
   /* Pretendard는 원문자(①②③)를 작게 그려서, 그 글꼴을 불러왔을 때만 키움 */
   .pt-font .step .cnum { font-size: 1.25em; line-height: 1; vertical-align: -0.06em; }
-  .step .step-dur { font-size: max(1.25vh, 10px); opacity: 0.9; font-weight: 600; }
+  .step .step-dur { font-size: max(calc(1.25 * var(--u)), 10px); opacity: 0.9; font-weight: 600; }
   
   .controls {
     display: flex;
@@ -502,10 +509,10 @@
   .control-row .controls { grid-column: 2; }
   .controls .ctrl-btn.danger { margin-left: 1.2vw; }
   .ctrl-btn {
-    padding: 1.5vh 1.5vw;
+    padding: calc(1.5 * var(--u)) 1.5vw;
     border: none;
-    border-radius: 1vh;
-    font-size: 1.8vh;
+    border-radius: calc(1 * var(--u));
+    font-size: calc(1.8 * var(--u));
     font-weight: 700;
     cursor: pointer;
     font-family: inherit;
@@ -517,8 +524,8 @@
   .ctrl-btn:hover { background: rgba(255,255,255,0.2); }
   .ctrl-btn.primary { 
     background: #22c55e;
-    font-size: 2.2vh;
-    padding: 1.5vh 2.5vw;
+    font-size: calc(2.2 * var(--u));
+    padding: calc(1.5 * var(--u)) 2.5vw;
   }
   .ctrl-btn.primary.paused { background: #f59e0b; }
   .ctrl-btn.danger { background: rgba(239,68,68,0.3); }
@@ -917,7 +924,7 @@
   
   <!-- 하단: 진행바 + 컨트롤 -->
   <div class="bottom">
-    <div class="progress" id="progress"><div class="step"><span class="step-num">1</span>찬성 1입론<br><span style="font-size:1vh;opacity:0.7">03:00</span></div><div class="step"><span class="step-num">2</span>반대 교차<br><span style="font-size:1vh;opacity:0.7">02:00</span></div><div class="step"><span class="step-num">3</span>반대 1입론<br><span style="font-size:1vh;opacity:0.7">03:00</span></div><div class="step"><span class="step-num">4</span>찬성 교차<br><span style="font-size:1vh;opacity:0.7">02:00</span></div><div class="step"><span class="step-num">5</span>찬성 2입론<br><span style="font-size:1vh;opacity:0.7">03:00</span></div><div class="step"><span class="step-num">6</span>반대 교차<br><span style="font-size:1vh;opacity:0.7">02:00</span></div><div class="step"><span class="step-num">7</span>반대 2입론<br><span style="font-size:1vh;opacity:0.7">03:00</span></div><div class="step"><span class="step-num">8</span>찬성 교차<br><span style="font-size:1vh;opacity:0.7">02:00</span></div><div class="step"><span class="step-num">9</span>반대 최종<br><span style="font-size:1vh;opacity:0.7">03:00</span></div><div class="step"><span class="step-num">10</span>찬성 최종<br><span style="font-size:1vh;opacity:0.7">03:00</span></div></div>
+    <div class="progress" id="progress"></div>
     <div class="control-row">
       <div class="keys" aria-label="단축키">
         <span><kbd>Space</kbd>시작·정지</span>
@@ -1225,7 +1232,7 @@
     lastScrolledStage = null;
     buildSlots();
     if (stages.length === 0) {
-      el.innerHTML = '<div style="flex:1;text-align:center;padding:1.5vh;opacity:0.5;font-size:1.5vh">⚙ 설정에서 토론 단계를 추가해주세요</div>';
+      el.innerHTML = '<div style="flex:1;text-align:center;padding:calc(1.5 * var(--u));opacity:0.5;font-size:calc(1.5 * var(--u))">⚙ 설정에서 토론 단계를 추가해주세요</div>';
       return;
     }
     stages.forEach((s, i) => {
