@@ -420,12 +420,11 @@
     font-size: max(1.3vh, 10px);
     line-height: 1.4;
     color: rgba(255,255,255,0.5);
-    white-space: nowrap;
+    min-width: 0;
+    word-break: keep-all;
   }
   .credit .credit-title { color: rgba(255,255,255,0.78); font-weight: 700; }
-  .credit .credit-role { color: rgba(255,255,255,0.38); margin-right: 0.3em; }
-  .credit a { color: inherit; text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 2px; }
-  .credit a:hover { color: #fff; }
+
   
   .progress {
     display: flex;
@@ -899,8 +898,8 @@
       </div>
       <div class="credit" aria-label="제작 정보">
         <div class="credit-title">CEDA 토론 진행 도구</div>
-        <div><span class="credit-role">원작 ·</span><a href="https://blog.naver.com/gappaywam" target="_blank" rel="noopener" title="https://blog.naver.com/gappaywam">세명고 이동진 교사</a></div>
-        <div><span class="credit-role">수정 ·</span>평촌고 「화법과 언어」 수업용</div>
+        <div>본 도구를 평촌고 「화법과 언어」 수업용으로 수정 배포함.</div>
+        <div>(원작: 세명고 이동진 교사)</div>
       </div>
     </div>
   </div>
