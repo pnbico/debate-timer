@@ -1784,6 +1784,7 @@
       next = `다음은 숙의 시간입니다. 양 팀은 ${t} 동안 협의해 주십시오.`;
     } else if (plain.startsWith('상호토론') || plain.startsWith('자유')) {
       next = `다음은 ${plain}입니다. 양측은 ${t} 동안 자유롭게 발언해 주십시오.`;
+      if (plain.startsWith('상호토론')) next += ' 가급적 모든 토론자가 참여하시고, 한 명이 지나치게 오래 발언하지 않도록 합니다.';
     } else if (s.side === 'pro' || s.side === 'con') {
       next = `다음은 ${plain}입니다. ${t} 동안 ${plain.includes('교차') ? '실시해' : '발언해'} 주십시오.`;
     } else {
